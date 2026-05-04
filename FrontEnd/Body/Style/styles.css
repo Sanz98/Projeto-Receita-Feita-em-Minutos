@@ -1,0 +1,42 @@
+body {
+  font-family: Arial;
+  margin: 0;
+  background: #f5f5f5;
+}
+
+header {
+  background: linear-gradient(45deg, orange, red);
+  color: white;
+  text-align: center;
+  padding: 30px;
+}
+
+.form {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  justify-content: center;
+}
+
+input {
+  padding: 10px;
+  width: 200px;
+}
+
+button {
+  background: orange;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+#lista {
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 10px;
+}
