@@ -1,166 +1,276 @@
-/* Variáveis de cor para manter o padrão moderno */
 :root {
-  --bg-dark: #121212;
-  --bg-card: #1e1e1e;
-  --text-light: #e0e0e0;
-  --primary-color: #ff9800; /* Laranja apetitoso estilo app de comida */
-  --primary-hover: #f57c00;
-  --border-color: #333333;
+  --bg-main: #0a0a0a; /* Fundo hiper escuro */
+  --bg-header: #171717; /* Fundo dos cards */
+  --bg-input: #262626;
+  --border-color: #262626;
+  --text-main: #f5f5f5;
+  --text-muted: #a3a3a3;
+  --primary: #f5f5f5; /* Botões brancos invertidos */
+  --primary-text: #0a0a0a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 20px 50px;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-}
-
-header h1 {
-  font-size: 2.5em;
-  margin: 0 0 5px 0;
-  color: var(--primary-color);
-}
-
-header p {
-  margin: 0 0 20px 0;
-  color: #a0a0a0;
-}
-
-/* Menu de Navegação Moderno */
-.menu {
-  margin-bottom: 30px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* HEADER TOP */
+.top-header {
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-color);
+  padding: 24px 20px;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background-color: var(--primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-text);
+}
+
+.logo-icon svg { width: 20px; height: 20px; }
+
+.logo-container h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* NAV MENU */
+.menu {
+  background-color: rgba(23, 23, 23, 0.7);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+}
+
+.menu-container {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  width: 100%;
+  max-width: 600px;
 }
 
 .menu button {
-  background-color: transparent;
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-  border-radius: 20px; /* Botões arredondados (pílula) */
-  padding: 8px 18px;
-  font-weight: normal;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .menu button:hover {
-  background-color: var(--primary-color);
-  color: #121212;
-  transform: translateY(-2px); /* Efeito de pular ao passar o mouse */
+  background-color: var(--border-color);
+  color: #e5e5e5;
 }
 
-/* Formulário de Busca e Adição */
-.form {
+.menu button.active {
+  background-color: var(--primary);
+  color: var(--primary-text);
+}
+
+/* CONTAINER DAS PÁGINAS */
+.container {
+  flex: 1;
   display: flex;
-  gap: 10px;
+  flex-direction: column;
   align-items: center;
-  flex-wrap: wrap;
+  padding: 48px 20px;
+}
+
+.pagina {
+  width: 100%;
+  max-width: 576px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* CARDS PRINCIPAIS */
+.hero-card {
+  background-color: var(--bg-header);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
   margin-bottom: 30px;
 }
 
-input {
-  padding: 12px 15px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: #2c2c2c;
-  color: white;
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+.regular-card { padding: 32px; }
+
+.hero-image {
+  position: relative;
+  height: 192px;
+  width: 100%;
 }
 
-input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 8px rgba(255, 152, 0, 0.4); /* Brilho laranja ao clicar */
+.hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-/* Botões Principais */
-button {
-  padding: 12px 20px;
-  border: none;
-  background-color: var(--primary-color);
-  color: #121212;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease-in-out;
+.hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--bg-header), transparent);
 }
 
-button:hover {
-  background-color: var(--primary-hover);
-  transform: scale(1.05); /* Botão cresce levemente */
+.hero-content {
+  position: relative;
+  padding: 0 32px 32px 32px;
+  margin-top: -32px;
+  text-align: center;
 }
 
-/* Grade de Receitas (Cards) */
-#lista, #lista-historico {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Grade responsiva */
-  gap: 25px;
-  margin-top: 20px;
+.hero-content h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 16px;
 }
 
-.card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 15px;
-  background-color: var(--bg-card);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-  transition: transform 0.2s;
+.hero-content p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 24px;
+}
+
+/* FORMULÁRIO */
+.form {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.card:hover {
-  transform: translateY(-5px); /* Efeito de flutuar o card */
-  border-color: var(--primary-color);
-}
-
-/* Imagens das comidas */
-.card img {
+input {
   width: 100%;
-  height: 180px;
-  object-fit: cover; /* Corta a imagem perfeitamente sem amassar */
-  border-radius: 8px;
-  margin-bottom: 15px;
+  padding: 16px 20px;
+  background-color: var(--bg-input);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-.card h3 {
-  margin: 0 0 10px 0;
-  color: white;
-  font-size: 1.3em;
+input:focus { border-color: #737373; }
+
+.btn-primary {
+  width: 100%;
+  padding: 16px;
+  background-color: var(--primary);
+  color: var(--primary-text);
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
-.card p {
-  color: #b0b0b0;
-  flex-grow: 1; /* Empurra os botões para o fundo do card */
-  font-size: 0.9em;
-  line-height: 1.4;
+.btn-primary:hover {
+  background-color: #ffffff;
+  transform: scale(1.02);
 }
 
-/* Divisão dos botões dentro do card */
-.card-buttons {
+/* LISTA DE RECEITAS SALVAS */
+.grid-lista {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.card-buttons button {
-  flex: 1; /* Botões dividem o espaço igualmente */
-  padding: 10px 5px;
-  font-size: 0.9em;
+.card-item {
+  background-color: var(--bg-header);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.btn-excluir {
+.card-item img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.card-item h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.card-item p {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.btn-sm {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-details {
+  background-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.btn-delete {
   background-color: transparent;
-  border: 1px solid #d32f2f;
-  color: #d32f2f;
-}
-
-.btn-excluir:hover {
-  background-color: #d32f2f;
-  color: white;
+  border: 1px solid #ef4444;
+  color: #ef4444;
 }

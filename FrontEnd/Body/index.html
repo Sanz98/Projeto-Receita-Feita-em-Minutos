@@ -3,27 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <title>Feito em Minutos</title>
-  <!-- Caminho do CSS corrigido -->
   <link rel="stylesheet" href="Style/styles.css">
 </head>
 <body>
 
-<header>
-  <h1>🍔 Feito em Minutos</h1>
-  <p>Descubra e compartilhe receitas incríveis</p>
+<!-- Cabeçalho idêntico ao do React -->
+<header class="top-header">
+  <div class="logo-container">
+    <div class="logo-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    </div>
+    <h1>Feito em Minutos</h1>
+  </div>
 </header>
 
-<section class="form">
-  <input type="text" id="nome" placeholder="Nome da receita">
-  <input type="text" id="ingredientes" placeholder="Ingredientes">
-  <button onclick="criarReceita()">Adicionar</button>
-  <input type="text" id="busca" placeholder="Buscar receita">
-  <button onclick="buscar()">Buscar</button>
-</section>
+<!-- Navegação -->
+<nav class="menu">
+  <div class="menu-container">
+    <button class="active" onclick="navegar('home', this)">Início</button>
+    <button onclick="navegar('ingredientes', this)">Ingredientes</button>
+    <button onclick="navegar('historico', this)">Histórico</button>
+    <button onclick="window.location.href='login.html'">Sair</button>
+  </div>
+</nav>
 
-<section id="lista"></section>
+<main class="container">
+  <!-- PÁGINA 1: INÍCIO -->
+  <section id="home" class="pagina">
+    <div class="hero-card">
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Kitchen">
+        <div class="hero-gradient"></div>
+      </div>
+      <div class="hero-content">
+        <h2>Transforme vídeos em receitas</h2>
+        <p>Adicione suas receitas manualmente abaixo e extraia os ingredientes em instantes.</p>
 
-<!-- Caminho do JS corrigido -->
+        <div class="form">
+          <input type="text" id="nome" placeholder="Nome da receita">
+          <input type="text" id="ingredientes" placeholder="Ingredientes (ex: Carne, pão)">
+          <button class="btn-primary" onclick="criarReceita()">Extrair receita</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="lista" class="grid-lista"></div>
+  </section>
+
+  <!-- PÁGINA 2: INGREDIENTES -->
+  <section id="ingredientes" class="pagina" style="display: none;">
+    <div class="hero-card regular-card">
+      <h2>Lista de Ingredientes</h2>
+      <p class="subtext">Marque o que você já tem em casa:</p>
+      <div id="lista-ingredientes">
+        <p class="empty-text">Nenhuma receita selecionada ainda. Vá ao Início e clique em "Detalhes".</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PÁGINA 3: HISTÓRICO -->
+  <section id="historico" class="pagina" style="display: none;">
+    <div class="hero-card regular-card">
+      <h2>Histórico</h2>
+      <p class="subtext">Últimas receitas salvas no sistema:</p>
+      <div id="lista-historico" class="grid-lista"></div>
+    </div>
+  </section>
+</main>
+
 <script src="script.js"></script>
 </body>
 </html>
