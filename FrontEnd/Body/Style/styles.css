@@ -1,42 +1,67 @@
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   margin: 0;
-  background: #f5f5f5;
+  background: #ffffff; /* Fundo branco do Figma */
+  padding: 20px; 
 }
 
 header {
-  background: linear-gradient(45deg, orange, red);
-  color: white;
-  text-align: center;
-  padding: 30px;
+  background: none; /* Removemos o gradiente laranja */
+  color: black;
+  text-align: left; /* Alinhamento à esquerda */
+  padding: 0 0 10px 0;
+}
+
+header h1 {
+  font-family: "Times New Roman", Times, serif; /* Fonte com serifa igual ao Figma */
+  font-size: 2.5em;
+  margin-bottom: 5px;
+}
+
+header p {
+  margin-top: 0;
+  font-size: 1.1em;
 }
 
 .form {
   display: flex;
-  gap: 10px;
-  padding: 20px;
-  justify-content: center;
+  gap: 5px;
+  padding: 10px 0;
+  justify-content: flex-start; /* Inputs alinhados à esquerda */
 }
 
 input {
-  padding: 10px;
+  padding: 8px;
   width: 200px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+/* Bordinha azul quando clica no input igual ao Figma */
+input:focus {
+  border: 2px solid #0056b3; 
 }
 
 button {
-  background: orange;
-  border: none;
-  padding: 10px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 8px 15px;
   cursor: pointer;
+  color: #333;
+}
+
+button:hover {
+  background: #e0e0e0;
 }
 
 #lista {
-  padding: 20px;
+  padding: 20px 0;
 }
 
 .card {
   background: white;
-  margin: 10px;
+  margin-bottom: 10px;
   padding: 15px;
-  border-radius: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
