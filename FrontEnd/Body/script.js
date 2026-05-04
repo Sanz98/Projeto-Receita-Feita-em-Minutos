@@ -5,7 +5,6 @@ function navegar(idPagina, btnElement) {
   paginas.forEach(pagina => pagina.style.display = 'none');
   document.getElementById(idPagina).style.display = 'block';
 
-  // Gerencia o botão "Ativo" (Branco) no Menu
   if (btnElement) {
     document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
@@ -58,18 +57,21 @@ async function deletar(id) {
   carregar();
 }
 
+// === TELA DE INGREDIENTES EXATA DO FIGMA ===
 function verIngredientes(nomeDaReceita, listaDeIngredientes) {
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
   
+  document.getElementById('titulo-ingredientes').innerText = `Ingredientes: ${nomeDaReceita}`;
   const divLista = document.getElementById('lista-ingredientes');
   const itens = listaDeIngredientes.split(',');
   
-  let htmlContexto = `<h3 style="margin-bottom: 15px;">${nomeDaReceita}</h3>`;
+  let htmlContexto = '';
   
   itens.forEach(item => {
     htmlContexto += `
-      <label style="display:flex; align-items:center; gap:10px; margin: 12px 0; cursor:pointer; padding: 12px; background: #262626; border-radius: 8px;">
-        <input type="checkbox" style="width: 20px; height: 20px; margin:0; padding:0;"> ${item.trim()}
+      <label class="checkbox-label">
+        <input type="checkbox" class="checkbox-input" onchange="toggleCheckbox(this)">
+        <span class="checkbox-text">${item.trim()}</span>
       </label>
     `;
   });
@@ -77,6 +79,25 @@ function verIngredientes(nomeDaReceita, listaDeIngredientes) {
   divLista.innerHTML = htmlContexto;
 }
 
+// Faz o texto ficar riscado e mais escuro ao clicar no checkbox
+function toggleCheckbox(element) {
+  const label = element.closest('label');
+  const text = label.querySelector('.checkbox-text');
+  
+  if (element.checked) {
+      label.style.backgroundColor = 'rgba(38, 38, 38, 0.4)';
+      label.style.borderColor = 'rgba(38, 38, 38, 0.5)';
+      text.style.textDecoration = 'line-through';
+      text.style.color = '#737373';
+  } else {
+      label.style.backgroundColor = '#262626';
+      label.style.borderColor = '#404040';
+      text.style.textDecoration = 'none';
+      text.style.color = '#e5e5e5';
+  }
+}
+
+// === TELA DE HISTÓRICO ===
 async function carregarHistorico() {
   const res = await fetch(API);
   const data = await res.json();
@@ -85,12 +106,17 @@ async function carregarHistorico() {
   
   data.forEach(r => {
     lista.innerHTML += `
-      <div class="card-item" style="flex-direction: row; align-items: center;">
-        <div style="flex: 1;">
-          <h3 style="margin-bottom: 4px;">${r.nome}</h3>
-          <p style="color: #10b981; font-weight: bold;">Concluído</p>
+      <div class="historico-card">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
+          <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
+            <span style="color: #a3a3a3;">Adicionado recentemente</span>
+            <span style="color: #10b981;">Concluído</span>
+          </div>
         </div>
-        <button class="btn-sm btn-details" style="flex: 0; padding: 10px 20px;" onclick="verIngredientes('${r.nome}', '${r.ingredientes}')">Ver</button>
+        <button class="h-icon-btn" onclick="verIngredientes('${r.nome}', '${r.ingredientes}')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+        </button>
       </div>
     `;
   });

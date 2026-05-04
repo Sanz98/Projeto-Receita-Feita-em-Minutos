@@ -7,7 +7,6 @@
 </head>
 <body>
 
-<!-- Cabeçalho idêntico ao do React -->
 <header class="top-header">
   <div class="logo-container">
     <div class="logo-icon">
@@ -17,7 +16,6 @@
   </div>
 </header>
 
-<!-- Navegação -->
 <nav class="menu">
   <div class="menu-container">
     <button class="active" onclick="navegar('home', this)">Início</button>
@@ -32,7 +30,7 @@
   <section id="home" class="pagina">
     <div class="hero-card">
       <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Kitchen">
+        <img src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Cozinha Escura">
         <div class="hero-gradient"></div>
       </div>
       <div class="hero-content">
@@ -42,7 +40,7 @@
         <div class="form">
           <input type="text" id="nome" placeholder="Nome da receita">
           <input type="text" id="ingredientes" placeholder="Ingredientes (ex: Carne, pão)">
-          <button class="btn-primary" onclick="criarReceita()">Extrair receita</button>
+          <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
         </div>
       </div>
     </div>
@@ -52,21 +50,46 @@
 
   <!-- PÁGINA 2: INGREDIENTES -->
   <section id="ingredientes" class="pagina" style="display: none;">
-    <div class="hero-card regular-card">
-      <h2>Lista de Ingredientes</h2>
-      <p class="subtext">Marque o que você já tem em casa:</p>
-      <div id="lista-ingredientes">
-        <p class="empty-text">Nenhuma receita selecionada ainda. Vá ao Início e clique em "Detalhes".</p>
+    <div class="hero-card">
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1760537831506-f2209c4b5ad6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGluZ3JlZGllbnRzJTIwdmVnZXRhYmxlcyUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080" alt="Ingredientes Frescos">
+        <div class="hero-gradient"></div>
+      </div>
+      <div class="hero-content text-left">
+        <h2 id="titulo-ingredientes">Ingredientes da receita</h2>
+        
+        <div id="lista-ingredientes" class="grid-lista">
+          <p class="text-muted">Nenhuma receita selecionada. Volte ao Início e clique em "Detalhes".</p>
+        </div>
+
+        <div class="utensilios-box">
+          <h3>Utensílios necessários</h3>
+          <ul>
+            <li><span>•</span> Panela média ou frigideira</li>
+            <li><span>•</span> Faca e Tábua de corte</li>
+            <li><span>•</span> Colher de pau</li>
+          </ul>
+        </div>
+
+        <div class="form-buttons" style="margin-top: 24px; display: flex; gap: 16px;">
+          <button class="btn-secondary" style="flex: 1;" onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar</button>
+          <button class="btn-primary" style="flex: 1;">Continuar</button>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- PÁGINA 3: HISTÓRICO -->
   <section id="historico" class="pagina" style="display: none;">
-    <div class="hero-card regular-card">
-      <h2>Histórico</h2>
-      <p class="subtext">Últimas receitas salvas no sistema:</p>
-      <div id="lista-historico" class="grid-lista"></div>
+    <div class="hero-card">
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1597968203824-49876d917f75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWNpcGUlMjBib29rJTIwdmludGFnZSUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Livro de Receitas Vintage">
+        <div class="hero-gradient"></div>
+      </div>
+      <div class="hero-content text-left">
+        <h2>Histórico de Receitas</h2>
+        <div id="lista-historico" class="grid-lista"></div>
+      </div>
     </div>
   </section>
 </main>
