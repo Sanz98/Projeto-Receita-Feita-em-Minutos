@@ -8,7 +8,7 @@ function sair() {
   window.location.href = 'login.html';
 }
 
-const API = "http://localhost:3000/receitas";
+const API = "/receitas";
 let receitasGlobais = [];
 
 function navegar(idPagina, btnElement) {
