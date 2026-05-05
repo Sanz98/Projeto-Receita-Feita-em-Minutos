@@ -8,42 +8,25 @@
 </head>
 <body>
 
-<header class="top-header">
-  <div class="logo-container">
-    <div class="logo-icon">
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo-icon mx-auto mb-4">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
     </div>
-    <h1>Feito em Minutos</h1>
-  </div>
-</header>
-
-<main class="container">
-  <section class="pagina" style="display: block;">
-    <div class="hero-card">
-      <div class="hero-image">
-        <!-- Imagem luxuosa de comida para o login -->
-        <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGFyayUyMGJhY2tncm91bmR8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Login">
-        <div class="hero-gradient"></div>
-      </div>
+    
+    <h2 class="login-title">Bem-vindo de volta!</h2>
+    <p class="login-subtitle">Faça login para acessar o Feito em Minutos.</p>
+    
+    <form class="form" onsubmit="fazerLogin(event)">
+      <input type="text" id="username" placeholder="Usuário" required>
+      <input type="password" id="password" placeholder="Senha" required>
       
-      <div class="hero-content text-center">
-        <h2>Bem-vindo de volta!</h2>
-        <p class="subtitle">Faça login para acessar suas receitas, listas de compras e gerenciar seus pedidos.</p>
-        
-        <!-- Formulário de Login -->
-        <form class="form" onsubmit="fazerLogin(event)">
-          <input type="text" id="username" placeholder="Nome de usuário" required>
-          <input type="password" id="password" placeholder="Sua senha secreta" required>
-          
-          <!-- Mensagem de erro que fica escondida até errar a senha -->
-          <p id="msg-erro" style="color: #ef4444; font-size: 0.875rem; display: none; font-weight: 500;">Usuário ou senha incorretos!</p>
-          
-          <button type="submit" class="btn-primary shadow-lg mt-24">Entrar na plataforma</button>
-        </form>
-      </div>
-    </div>
-  </section>
-</main>
+      <p id="msg-erro" class="error-msg" style="display: none;">Usuário ou senha incorretos!</p>
+      
+      <button type="submit" class="btn-primary mt-4">Entrar na plataforma</button>
+    </form>
+  </div>
+</div>
 
 <script src="login.js"></script>
 </body>

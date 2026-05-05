@@ -1,34 +1,44 @@
-const API = "http://localhost:3000/receitas";
+// === TRAVA DE SEGURANÇA (Garante que passe pelo Login primeiro) ===
+if (localStorage.getItem('logado') !== 'true') {
+  window.location.href = 'login.html';
+}
 
-// === SISTEMA DE NAVEGAÇÃO SPA (7 Páginas) ===
+function sair() {
+  localStorage.removeItem('logado');
+  window.location.href = 'login.html';
+}
+
+const API = "http://localhost:3000/receitas";
+let receitasGlobais = []; // Vai guardar todas as receitas pra evitar o erro da tela preta
+
+// === SISTEMA DE NAVEGAÇÃO SPA ===
 function navegar(idPagina, btnElement) {
-  // Esconde todas as seções
   const paginas = document.querySelectorAll('.pagina');
   paginas.forEach(pagina => pagina.style.display = 'none');
+  
+  const paginaAlvo = document.getElementById(idPagina);
+  if (paginaAlvo) {
+      paginaAlvo.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Correção oficial do Bug do Scroll!
+  }
 
-  // Mostra a seção desejada
-  document.getElementById(idPagina).style.display = 'block';
-
-  // Atualiza a barra branca do menu ativo
   if (btnElement) {
     document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
   }
 
-  // Comportamentos específicos por página
   if (idPagina === 'historico') carregarHistorico();
   if (idPagina === 'home') carregar();
 }
 
-// === TELA: INÍCIO ===
+// === LÓGICA DA API ===
 async function carregar() {
   const res = await fetch(API);
-  const data = await res.json();
+  receitasGlobais = await res.json(); // Guarda os dados aqui
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
-
-  data.forEach(r => {
-    // Foto dinâmica ou fallback
+  
+  receitasGlobais.forEach(r => {
     const img = r.imagem || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
     lista.innerHTML += `
       <div class="historico-card" style="padding: 16px;">
@@ -37,7 +47,7 @@ async function carregar() {
           <h3 style="font-size: 1rem; font-weight: 700;">${r.nome}</h3>
           <span style="font-size: 0.875rem; color: #a3a3a3;">Adicionado via API</span>
         </div>
-        <button class="h-icon-btn" onclick="verIngredientes('${r.nome}', '${r.ingredientes}')" style="margin-right: 8px;">
+        <button class="h-icon-btn" onclick="verIngredientes(${r.id})" style="margin-right: 8px;">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
         </button>
         <button class="h-icon-btn" onclick="deletar(${r.id})" style="color: #ef4444;">
@@ -51,7 +61,7 @@ async function carregar() {
 async function criarReceita() {
   const nome = document.getElementById("nome").value;
   const ingredientes = document.getElementById("ingredientes").value;
-
+  
   if (!nome || !ingredientes) return alert("Preencha todos os campos!");
 
   await fetch(API, {
@@ -59,7 +69,7 @@ async function criarReceita() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nome, ingredientes })
   });
-
+  
   document.getElementById("nome").value = "";
   document.getElementById("ingredientes").value = "";
   carregar();
@@ -70,29 +80,27 @@ async function deletar(id) {
   carregar();
 }
 
-// === TELA DE INGREDIENTES EXATA DO FIGMA ===
-function verIngredientes(nomeDaReceita, listaDeIngredientes) {
-  // Navega e ativa o botão no menu
+// === TELA DE INGREDIENTES 100% BLINDADA ===
+function verIngredientes(idDaReceita) {
+  // Busca a receita pelo ID para não dar erro de aspas no texto
+  const receita = receitasGlobais.find(r => r.id === idDaReceita);
+  if (!receita) return;
+
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
-
-  const titulo = document.getElementById('titulo-ingredientes');
-  if (titulo) titulo.innerText = `Ingredientes: ${nomeDaReceita}`;
-
+  
+  document.getElementById('titulo-ingredientes').innerText = `Ingredientes: ${receita.nome}`;
   const divLista = document.getElementById('lista-ingredientes');
-  divLista.innerHTML = ''; // Limpa a mensagem padrão
-
-  // PROTEÇÃO CONTRA ERRO: Se a receita não tiver ingredientes, cria um texto padrão
-  if (!listaDeIngredientes || listaDeIngredientes === "undefined") {
-    listaDeIngredientes = "Nenhum ingrediente cadastrado";
+  
+  let listaHtml = '';
+  let itensLista = receita.ingredientes;
+  
+  if (!itensLista || itensLista === "undefined") {
+    itensLista = "Nenhum ingrediente";
   }
-
-  const itens = listaDeIngredientes.split(',');
-
-  let htmlContexto = '';
-
-  itens.forEach(item => {
-    if (item.trim() !== '') { // Só adiciona se não for um espaço vazio
-      htmlContexto += `
+  
+  itensLista.split(',').forEach(item => {
+    if (item.trim() !== '') {
+      listaHtml += `
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox-input" onchange="toggleCheckbox(this)">
           <span class="checkbox-text">${item.trim()}</span>
@@ -100,34 +108,47 @@ function verIngredientes(nomeDaReceita, listaDeIngredientes) {
       `;
     }
   });
-
-  divLista.innerHTML = htmlContexto;
+  
+  divLista.innerHTML = listaHtml;
 }
 
-// === TELA: HISTÓRICO ===
+function toggleCheckbox(element) {
+  const label = element.closest('label');
+  const text = label.querySelector('.checkbox-text');
+  
+  if (element.checked) {
+      label.style.backgroundColor = 'rgba(38, 38, 38, 0.4)';
+      label.style.borderColor = 'rgba(38, 38, 38, 0.5)';
+      text.style.textDecoration = 'line-through';
+      text.style.color = '#737373';
+  } else {
+      label.style.backgroundColor = '#262626';
+      label.style.borderColor = '#404040';
+      text.style.textDecoration = 'none';
+      text.style.color = '#e5e5e5';
+  }
+}
+
 async function carregarHistorico() {
   const res = await fetch(API);
   const data = await res.json();
   const lista = document.getElementById("lista-historico");
   lista.innerHTML = "";
-
+  
   data.forEach(r => {
     lista.innerHTML += `
       <div class="historico-card">
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
           <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
-            <span style="color: #a3a3a3;">14/05/2026</span>
+            <span style="color: #a3a3a3;">Adicionado recentemente</span>
             <span style="color: #10b981;">Concluído</span>
           </div>
         </div>
-        <button class="h-icon-btn" onclick="verIngredientes('${r.nome}', '${r.ingredientes}')">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-        </button>
       </div>
     `;
   });
 }
 
-// Inicia carregando as receitas da API na Home
+// Início automático do App
 carregar();

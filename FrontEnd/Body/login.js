@@ -1,42 +1,27 @@
 async function fazerLogin(event) {
-  // Previne que a página recarregue ao clicar em "Entrar"
-  event.preventDefault();
+  event.preventDefault(); // Impede a tela de piscar
 
   const usuarioDigitado = document.getElementById('username').value;
   const senhaDigitada = document.getElementById('password').value;
   const mensagemErro = document.getElementById('msg-erro');
 
   try {
-    // Comunicação com o seu Backend na rota de login
     const resposta = await fetch('http://localhost:3000/users/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        username: usuarioDigitado, 
-        password: senhaDigitada 
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: usuarioDigitado, password: senhaDigitada })
     });
 
     if (resposta.ok) {
-      const dados = await resposta.json();
-      
-      // Se a API te devolver um token (JWT), salva no navegador
-      if (dados.token) {
-        localStorage.setItem('token', dados.token);
-      }
-      
-      // Redireciona para o site principal lindão!
-      window.location.href = 'index.html';
-      
+      // Cria o "carimbo" de acesso liberado
+      localStorage.setItem('logado', 'true');
+      window.location.href = 'index.html'; // Vai pro site principal
     } else {
-      // Se a senha estiver errada, mostra o aviso vermelho
-      mensagemErro.style.display = 'block';
+      mensagemErro.style.display = 'block'; // Mostra o erro em vermelho
     }
   } catch (error) {
-    console.error("Erro no login:", error);
-    mensagemErro.innerText = "Erro ao conectar com o servidor. O backend está rodando?";
+    console.error("Erro na API de login:", error);
+    mensagemErro.innerText = "Erro no servidor. Verifique o backend.";
     mensagemErro.style.display = 'block';
   }
 }
