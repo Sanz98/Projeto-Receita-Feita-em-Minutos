@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - Feito em Minutos</title>
+  <link rel="stylesheet" href="Style/styles.css">
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo-icon mx-auto mb-4">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    </div>
+    
+    <h2 class="login-title">Criar nova conta</h2>
+    <p class="login-subtitle">Junte-se ao Feito em Minutos hoje mesmo.</p>
+    
+    <form class="form" onsubmit="cadastrarUsuario(event)">
+      <input type="text" id="new-username" placeholder="Escolha um usuário" required>
+      <input type="password" id="new-password" placeholder="Crie uma senha forte" required>
+      
+      <p id="msg-aviso" class="error-msg" style="display: none;"></p>
+      
+      <button type="submit" class="btn-primary mt-4">Criar conta</button>
+    </form>
+    
+    <div style="margin-top: 24px; font-size: 0.875rem;">
+      <span style="color: var(--text-muted);">Já tem uma conta? </span>
+      <a href="login.html" style="color: var(--primary); text-decoration: none; font-weight: bold;">Faça login aqui</a>
+    </div>
+  </div>
+</div>
+
+<script src="cadastro.js"></script>
+</body>
+</html>

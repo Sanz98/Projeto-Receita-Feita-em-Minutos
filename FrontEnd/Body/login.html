@@ -15,16 +15,21 @@
     </div>
     
     <h2 class="login-title">Bem-vindo de volta!</h2>
-    <p class="login-subtitle">Faça login para acessar o Feito em Minutos.</p>
+    <p class="login-subtitle">Faça login para acessar suas receitas.</p>
     
     <form class="form" onsubmit="fazerLogin(event)">
-      <input type="text" id="username" placeholder="Usuário" required>
-      <input type="password" id="password" placeholder="Senha" required>
+      <input type="text" id="username" placeholder="Nome de usuário" required>
+      <input type="password" id="password" placeholder="Sua senha" required>
       
       <p id="msg-erro" class="error-msg" style="display: none;">Usuário ou senha incorretos!</p>
       
-      <button type="submit" class="btn-primary mt-4">Entrar na plataforma</button>
+      <button type="submit" class="btn-primary shadow-lg mt-24">Entrar na plataforma</button>
     </form>
+    
+    <div style="margin-top: 24px; font-size: 0.875rem;">
+      <span style="color: var(--text-muted);">Ainda não tem conta? </span>
+      <a href="cadastro.html" style="color: var(--primary); text-decoration: none; font-weight: bold;">Cadastre-se</a>
+    </div>
   </div>
 </div>
 

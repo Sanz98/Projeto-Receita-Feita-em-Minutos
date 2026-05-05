@@ -104,6 +104,64 @@ app.post("/login", (req, res) => {
   } // FECHAMENTO ADICIONADO AQUI
 }); // FECHAMENTO ADICIONADO AQUI
 
+// ==========================================
+// ROTA DE LOGIN
+// ==========================================
+app.post('/users/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const users = JSON.parse(fs.readFileSync('./Data/users.json', 'utf8'));
+
+    // Busca usando 'username' em vez de 'usuario'
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      return res.status(400).json({ mensagem: "Usuário não encontrado" });
+    }
+
+    // Compara a senha digitada com a criptografada
+    const senhaValida = await bcrypt.compare(password, user.password);
+    if (!senhaValida) {
+      return res.status(400).json({ mensagem: "Senha incorreta" });
+    }
+
+    res.status(200).json({ token: "seu-token-jwt-aqui", mensagem: "Login efetuado!" });
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro interno." });
+  }
+});
+
+// ==========================================
+// ROTA DE CADASTRO (REGISTER)
+// ==========================================
+app.post('/users/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const usersPath = './Data/users.json';
+    const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+
+    const usuarioExiste = users.find(u => u.username === username);
+    if (usuarioExiste) {
+      return res.status(400).json({ mensagem: "Nome de usuário já existe!" });
+    }
+
+    // Criptografa a senha antes de salvar
+    const senhaCriptografada = await bcrypt.hash(password, 10);
+
+    const novoUsuario = {
+      id: users.length > 0 ? users[users.length - 1].id + 1 : 1,
+      username: username,
+      password: senhaCriptografada // Salva o hash seguro
+    };
+
+    users.push(novoUsuario);
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+
+    res.status(201).json({ mensagem: "Usuário criado!" });
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao cadastrar." });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

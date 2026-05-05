@@ -1,5 +1,5 @@
 {
-  "name": "Feito-em-Minutos",
+  "name": "feito-em-minutos",
   "version": "1.0.0",
   "description": "Sistema de receitas com Node.js, JWT e autenticacao",
   "main": "app.js",
