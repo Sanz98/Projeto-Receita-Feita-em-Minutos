@@ -5,7 +5,7 @@ function navegar(idPagina, btnElement) {
   // Esconde todas as seções
   const paginas = document.querySelectorAll('.pagina');
   paginas.forEach(pagina => pagina.style.display = 'none');
-  
+
   // Mostra a seção desejada
   document.getElementById(idPagina).style.display = 'block';
 
@@ -26,7 +26,7 @@ async function carregar() {
   const data = await res.json();
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
-  
+
   data.forEach(r => {
     // Foto dinâmica ou fallback
     const img = r.imagem || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
@@ -51,7 +51,7 @@ async function carregar() {
 async function criarReceita() {
   const nome = document.getElementById("nome").value;
   const ingredientes = document.getElementById("ingredientes").value;
-  
+
   if (!nome || !ingredientes) return alert("Preencha todos os campos!");
 
   await fetch(API, {
@@ -59,7 +59,7 @@ async function criarReceita() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nome, ingredientes })
   });
-  
+
   document.getElementById("nome").value = "";
   document.getElementById("ingredientes").value = "";
   carregar();
@@ -70,43 +70,38 @@ async function deletar(id) {
   carregar();
 }
 
-// === TELA: INGREDIENTES ===
+// === TELA DE INGREDIENTES EXATA DO FIGMA ===
 function verIngredientes(nomeDaReceita, listaDeIngredientes) {
-  // Navega e ativa o segundo botão (Ingredientes)
+  // Navega e ativa o botão no menu
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
-  
-  document.getElementById('titulo-ingredientes').innerText = `Ingredientes da receita`;
-  const divLista = document.getElementById('lista-ingredientes');
-  const itens = listaDeIngredientes.split(',');
-  
-  let htmlContexto = '';
-  itens.forEach(item => {
-    htmlContexto += `
-      <label class="checkbox-label">
-        <input type="checkbox" class="checkbox-input" onchange="toggleCheckbox(this)">
-        <span class="checkbox-text">${item.trim()}</span>
-      </label>
-    `;
-  });
-  
-  divLista.innerHTML = htmlContexto;
-}
 
-function toggleCheckbox(element) {
-  const label = element.closest('label');
-  const text = label.querySelector('.checkbox-text');
-  
-  if (element.checked) {
-      label.style.backgroundColor = 'rgba(38, 38, 38, 0.4)';
-      label.style.borderColor = 'rgba(38, 38, 38, 0.5)';
-      text.style.textDecoration = 'line-through';
-      text.style.color = '#737373';
-  } else {
-      label.style.backgroundColor = '#262626';
-      label.style.borderColor = '#404040';
-      text.style.textDecoration = 'none';
-      text.style.color = '#e5e5e5';
+  const titulo = document.getElementById('titulo-ingredientes');
+  if (titulo) titulo.innerText = `Ingredientes: ${nomeDaReceita}`;
+
+  const divLista = document.getElementById('lista-ingredientes');
+  divLista.innerHTML = ''; // Limpa a mensagem padrão
+
+  // PROTEÇÃO CONTRA ERRO: Se a receita não tiver ingredientes, cria um texto padrão
+  if (!listaDeIngredientes || listaDeIngredientes === "undefined") {
+    listaDeIngredientes = "Nenhum ingrediente cadastrado";
   }
+
+  const itens = listaDeIngredientes.split(',');
+
+  let htmlContexto = '';
+
+  itens.forEach(item => {
+    if (item.trim() !== '') { // Só adiciona se não for um espaço vazio
+      htmlContexto += `
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-input" onchange="toggleCheckbox(this)">
+          <span class="checkbox-text">${item.trim()}</span>
+        </label>
+      `;
+    }
+  });
+
+  divLista.innerHTML = htmlContexto;
 }
 
 // === TELA: HISTÓRICO ===
@@ -115,7 +110,7 @@ async function carregarHistorico() {
   const data = await res.json();
   const lista = document.getElementById("lista-historico");
   lista.innerHTML = "";
-  
+
   data.forEach(r => {
     lista.innerHTML += `
       <div class="historico-card">
