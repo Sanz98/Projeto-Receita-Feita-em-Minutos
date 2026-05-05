@@ -9,5 +9,10 @@
     "id": 3,
     "nome": "Macarrão Alho e Óleo",
     "ingredientes": "Macarrão, Alho, Azeite, Sal"
+  },
+  {
+    "id": 3,
+    "nome": "Cachorro Quente",
+    "ingredientes": "Pão,Salsicha e Molho"
   }
 ]

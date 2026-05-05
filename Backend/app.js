@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
+const bcrypt = require('bcrypt');
+const fs = require('fs'); // Aproveite e confirme se o fs também está aí!
 const jwt = require("jsonwebtoken");
 const path = require("path");
 require("dotenv").config();
