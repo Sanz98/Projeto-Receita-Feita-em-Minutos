@@ -1,10 +1,69 @@
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
 const { SECRET } = require("../middleware/auth");
-
 const caminho = "./data/usuarios.json";
+
+const crypto = require('crypto'); // Módulo nativo do Node para gerar o token
+
+const usersFilePath = path.join(__dirname, '../../Data/users.json');
+
+// Função auxiliar para ler usuários (você já deve ter algo parecido)
+const lerUsuarios = () => JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
+const salvarUsuarios = (dados) => fs.writeFileSync(usersFilePath, JSON.stringify(dados, null, 2));
+
+// 1. Função para gerar o token de recuperação
+exports.solicitarRecuperacao = async (req, res) => {
+    const { email } = req.body;
+    let users = lerUsuarios();
+
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) {
+        return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    // Gera um token aleatório e o tempo de expiração (1 hora)
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetExpires = Date.now() + 3600000; // 1 hora em milissegundos
+
+    // Salva o token no usuário
+    users[userIndex].resetToken = resetToken;
+    users[userIndex].resetExpires = resetExpires;
+    salvarUsuarios(users);
+
+    // IMPORTANTE: Em um sistema real, você enviaria esse link por E-MAIL (usando Nodemailer).
+    // Como estamos em desenvolvimento, vamos exibir o token no console e no retorno da API.
+    const linkRecuperacao = `http://127.0.0.1:5500/FrontEnd/Body/redefinir-senha.html?token=${resetToken}`;
+    console.log(`Link de recuperação para ${email}: ${linkRecuperacao}`);
+
+    res.status(200).json({ message: 'Instruções de recuperação geradas no console do servidor.', token: resetToken });
+};
+
+// 2. Função para salvar a nova senha
+exports.redefinirSenha = async (req, res) => {
+    const { token, novaSenha } = req.body;
+    let users = lerUsuarios();
+
+    // Procura o usuário que tem esse token e se o token ainda não expirou
+    const userIndex = users.findIndex(u => u.resetToken === token && u.resetExpires > Date.now());
+
+    if (userIndex === -1) {
+        return res.status(400).json({ error: 'Token inválido ou expirado.' });
+    }
+
+    // Criptografa a nova senha
+    const salt = await bcrypt.genSalt(10);
+    const senhaHash = await bcrypt.hash(novaSenha, salt);
+
+    // Atualiza a senha e apaga os dados do token
+    users[userIndex].password = senhaHash;
+    delete users[userIndex].resetToken;
+    delete users[userIndex].resetExpires;
+    
+    salvarUsuarios(users);
+
+    res.status(200).json({ message: 'Senha redefinida com sucesso!' });
+};
 
 // 🔹 LOGIN
 async function login(req, res) {

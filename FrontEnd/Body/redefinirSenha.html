@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Nova Senha - Receita Feita em Minutos</title>
+    <!-- Vinculando o seu arquivo de CSS existente -->
+    <link rel="stylesheet" href="Style/styles.css">
+</head>
+<body>
+    <div class="form-container login-container">
+        <div class="form-header">
+            <h2>Criar Nova Senha 🔒</h2>
+            <p>Quase lá! Digite sua nova senha de acesso abaixo.</p>
+        </div>
+
+        <form id="form-redefinir">
+            <div class="input-group">
+                <label for="nova-senha">Nova Senha</label>
+                <input type="password" id="nova-senha" placeholder="Digite sua nova senha" required minlength="6">
+            </div>
+            
+            <button type="submit" class="btn-submit">Salvar Nova Senha</button>
+        </form>
+    </div>
+
+    <!-- Importando o script que criamos na etapa anterior -->
+    <script src="redefinir-senha.js"></script>
+</body>
+</html>

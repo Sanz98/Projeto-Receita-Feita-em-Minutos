@@ -4,6 +4,14 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
+const userController = require('../controllers/userController');
+
+// Suas rotas existentes (login, cadastro, etc) ...
+
+// Novas rotas para recuperação de senha
+router.post('/esqueci-senha', userController.solicitarRecuperacao);
+router.post('/redefinir-senha', userController.redefinirSenha);
+
 // Puxa a chave do .env
 const SECRET = process.env.JWT_SECRET;
 // Caminho corrigido para buscar users.json

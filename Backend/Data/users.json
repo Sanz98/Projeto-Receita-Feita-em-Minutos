@@ -3,5 +3,15 @@
     "id": 1,
     "username": "Diogo",
     "password": "$2b$10$FKP.rjPZ785I/uQF3peE7eM.psCki3zaJjMPDIjYf4ZN6Jll4IbdK"
+  },
+  {
+    "id": 2,
+    "username": "luis",
+    "password": "$2b$10$xPiV0a8ie4ZmcA26ftmiFOzRjd1V9uKz5nRup/qFZdiIpk/orOstu"
+  },
+  {
+    "id": 3,
+    "username": "bot1",
+    "password": "$2b$10$he3LseU0.qfpmwM4uueSTus.mpIprnoFi46oet3OAMT5ujcR3M4vy"
   }
 ]
