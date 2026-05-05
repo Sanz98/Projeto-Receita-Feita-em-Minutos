@@ -1,19 +1,21 @@
-const express = require("express");
-const cors = require("cors");
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
 const bcrypt = require('bcrypt');
-const fs = require('fs'); // Aproveite e confirme se o fs também está aí!
-const jwt = require("jsonwebtoken");
-const path = require("path");
-require("dotenv").config();
+const path = require('path');
+const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
+const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
 
-const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
-const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
+// A linha mágica do Frontend
+app.use(express.static(path.join(__dirname, '../FrontEnd/Body')));
+
+// ... (daqui para baixo, a partir da linha 16, você mantém o seu código normal com as rotas app.get("/receitas", etc) ....
 
 // GET (listar receitas)
 app.get("/receitas", (req, res) => {
