@@ -62,8 +62,9 @@ async function carregar() {
 }
 
 async function criarReceita() {
-  const nome = document.getElementById("nome").value;
-  const ingredientes = document.getElementById("ingredientes").value;
+  // ATUALIZADO PARA OS NOVOS IDs
+  const nome = document.getElementById("input-nome").value;
+  const ingredientes = document.getElementById("input-ingredientes").value;
   
   if (!nome || !ingredientes) return alert("Preencha todos os campos!");
 
@@ -73,8 +74,9 @@ async function criarReceita() {
     body: JSON.stringify({ nome, ingredientes })
   });
   
-  document.getElementById("nome").value = "";
-  document.getElementById("ingredientes").value = "";
+  // Limpa as caixinhas
+  document.getElementById("input-nome").value = "";
+  document.getElementById("input-ingredientes").value = "";
   carregar();
 }
 
@@ -86,7 +88,10 @@ async function deletar(id) {
 function verIngredientes(idDaReceita) {
   const receita = receitasGlobais.find(r => String(r.id) === String(idDaReceita));
   
-  if (!receita) return;
+  if (!receita) {
+      alert("Erro ao buscar a receita. Atualize a página e tente novamente.");
+      return;
+  }
 
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
   

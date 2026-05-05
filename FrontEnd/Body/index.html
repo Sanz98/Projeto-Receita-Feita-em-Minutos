@@ -42,8 +42,9 @@
         <h2>Transforme vídeos em receitas</h2>
         <p class="subtitle">Cole o link de um vídeo de receita ou digite manualmente para extrair os ingredientes.</p>
         <div class="form">
-          <input type="text" id="nome" placeholder="Nome da receita">
-          <input type="text" id="ingredientes" placeholder="Ingredientes (ex: Carne, pão)">
+          <!-- IDs CORRIGIDOS AQUI -->
+          <input type="text" id="input-nome" placeholder="Nome da receita">
+          <input type="text" id="input-ingredientes" placeholder="Ingredientes (ex: Carne, pão)">
           <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
         </div>
       </div>
@@ -51,6 +52,7 @@
     <div id="lista" class="grid-lista"></div>
   </section>
 
+  <!-- AGORA ESSE É O ÚNICO "ingredientes" DA PÁGINA -->
   <section id="ingredientes" class="pagina" style="display: none;">
     <div class="hero-card">
       <div class="hero-image">
@@ -65,8 +67,8 @@
         <div class="utensilios-box">
           <h3>Utensílios necessários</h3>
           <ul>
-            <li><span>•</span> Panela média</li>
-            <li><span>•</span> Faca e Tábua</li>
+            <li><span>•</span> Panela média ou frigideira</li>
+            <li><span>•</span> Faca e Tábua de corte</li>
           </ul>
         </div>
         <div class="action-buttons mt-24">
