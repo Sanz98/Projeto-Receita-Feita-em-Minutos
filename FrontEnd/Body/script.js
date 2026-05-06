@@ -15,36 +15,33 @@ let receitasGlobais = [];
 // NOVO: Função para gerar a imagem dinâmica
 // ==========================================
 function gerarImagemReceita(nome, link) {
-  // 1. Verifica se tem link do YouTube e puxa a capa (thumbnail)
-  if (link && (link.includes('youtube.com/watch?v=') || link.includes('youtu.be/'))) {
-      let videoId = '';
-      if (link.includes('youtube.com/watch?v=')) {
-          videoId = link.split('v=')[1].substring(0, 11);
-      } else if (link.includes('youtu.be/')) {
-          videoId = link.split('youtu.be/')[1].substring(0, 11);
-      }
-      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-  }
-  
-  // 2. Se não tem link de vídeo, busca uma foto de comida baseada na primeira palavra (ex: "pizza")
-  if (nome) {
-      const palavraChave = encodeURIComponent(nome.trim().split(' ')[0]);
-      return `https://loremflickr.com/320/240/${palavraChave},food/all`;
+  // 1. Tenta extrair miniatura do YouTube de forma profissional
+  if (link) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = link.match(regExp);
+    if (match && match[2].length === 11) {
+      return `https://img.youtube.com/vi/${match[2]}/mqdefault.jpg`;
+    }
   }
 
-  // 3. Fallback (A imagem padrão original que você já usava)
-  return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'; 
+  // 2. Se for manual ou link comum, busca uma imagem real baseada no NOME
+  // Se o nome for o padrão da IA, tentamos usar a palavra 'food' para não vir imagem aleatória
+  const busca = (nome && nome !== "Receita Mágica Extraída") ? nome : "delicious food";
+  const palavraChave = encodeURIComponent(busca.trim().split(' ')[0]);
+
+  // Usamos o LoremFlickr com a tag 'recipe' para garantir que venha comida
+  return `https://loremflickr.com/400/300/${palavraChave},recipe/all`;
 }
 // ==========================================
 
 function navegar(idPagina, btnElement) {
   const paginas = document.querySelectorAll('.pagina');
   paginas.forEach(pagina => pagina.style.display = 'none');
-  
+
   const paginaAlvo = document.getElementById(idPagina);
   if (paginaAlvo) {
-      paginaAlvo.style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    paginaAlvo.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   if (btnElement) {
@@ -65,10 +62,13 @@ async function carregar() {
     lista.innerHTML = "";
     
     receitasGlobais.forEach(r => {
-      // Agora ele puxa a imagem salva do banco, ou o fallback
-      const img = r.imagem || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+      // AQUI ESTÁ A CORREÇÃO:
+      // Puxa a imagem que foi salva no banco (r.imagem). 
+      // Se por algum motivo não tiver imagem salva, usa a busca de comida.
+      const img = r.imagem || "https://loremflickr.com/400/300/food,recipe/all";
+      
       lista.innerHTML += `
-        <div class="historico-card" style="padding: 16px; margin-bottom: 16px;">
+        <div class="historico-card" style="padding: 16px; margin-bottom: 16px; display: flex; align-items: center;">
           <img src="${img}" alt="${r.nome}" style="width: 64px; height: 64px; border-radius: 8px; object-fit: cover; margin-right: 16px;">
           <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
             <h3 style="font-size: 1rem; font-weight: 700;">${r.nome}</h3>
@@ -88,57 +88,47 @@ async function carregar() {
   }
 }
 
+// === FUNÇÃO CRIAR RECEITA CORRIGIDA ===
 async function criarReceita() {
   let nome = document.getElementById("input-nome").value;
   let ingredientes = document.getElementById("input-ingredientes").value;
-  
   const linkInput = document.getElementById("input-link");
   const link = linkInput ? linkInput.value : "";
-  
-  // 1. Verifica se TUDO está vazio
+
   if (!nome && !ingredientes && !link) {
-      return alert("Por favor, preencha o Nome da receita ou simplesmente cole um Link do vídeo!");
+    return alert("Por favor, informe pelo menos o nome ou um link!");
   }
 
-  // 2. A MÁGICA: O usuário só colocou o link!
+  // Simulação de extração por link (se nome ou ingredientes estiverem vazios)
   if (link && (!nome || !ingredientes)) {
-      // Aqui, futuramente, você fará um "fetch" para o seu BackEnd pedindo para a IA ler o link.
-      // Como estamos preparando o terreno, vamos simular a resposta da IA:
-      
-      alert("🪄 Analisando o vídeo e extraindo receita... (Simulação)");
-      
-      // Se não tem nome, cria um automático
-      if (!nome) {
-          nome = "Receita Mágica Extraída";
-      }
-      
-      // Se não tem ingredientes, cria um texto provisório
-      if (!ingredientes) {
-          ingredientes = "Ingredientes em processamento (No futuro, a IA listará tudo aqui: ex. Farinha, Ovo, Leite)";
-      }
+    if (!nome) nome = "Receita via Link"; // Nome provisório
+    if (!ingredientes) ingredientes = "Extraindo ingredientes do vídeo...";
   }
 
-  // Se o usuário não colocou nem link nem ingredientes, mas colocou nome
-  if (!ingredientes && !link) {
-      ingredientes = "Nenhum ingrediente informado.";
-  }
-
-  // Gera a imagem (Youtube ou Genérica) - a função que criamos antes!
+  // Gera a imagem correta (YouTube ou Busca por Nome)
   const urlImagemGerada = gerarImagemReceita(nome, link);
 
-  // Envia para o banco de dados
-  await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nome, ingredientes, link, imagem: urlImagemGerada })
-  });
-  
-  // Limpa as caixinhas
-  document.getElementById("input-nome").value = "";
-  document.getElementById("input-ingredientes").value = "";
-  if(linkInput) linkInput.value = ""; 
-  
-  carregar();
+  try {
+    await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: nome || "Nova Receita",
+        ingredientes: ingredientes || "Lista de ingredientes",
+        link,
+        imagem: urlImagemGerada
+      })
+    });
+
+    // Limpa os campos
+    document.getElementById("input-nome").value = "";
+    document.getElementById("input-ingredientes").value = "";
+    if (linkInput) linkInput.value = "";
+
+    carregar(); // Recarrega a lista
+  } catch (error) {
+    console.error("Erro ao salvar:", error);
+  }
 }
 
 async function deletar(id) {
@@ -148,24 +138,24 @@ async function deletar(id) {
 
 function verIngredientes(idDaReceita) {
   const receita = receitasGlobais.find(r => String(r.id) === String(idDaReceita));
-  
+
   if (!receita) {
-      alert("Erro ao buscar a receita. Atualize a página e tente novamente.");
-      return;
+    alert("Erro ao buscar a receita. Atualize a página e tente novamente.");
+    return;
   }
 
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
-  
+
   document.getElementById('titulo-ingredientes').innerText = `Ingredientes: ${receita.nome}`;
   const divLista = document.getElementById('lista-ingredientes');
-  
+
   let listaHtml = '';
   let itensLista = receita.ingredientes;
-  
+
   if (!itensLista || itensLista === "undefined") {
     itensLista = "Nenhum ingrediente";
   }
-  
+
   itensLista.split(',').forEach(item => {
     if (item.trim() !== '') {
       listaHtml += `
@@ -176,24 +166,24 @@ function verIngredientes(idDaReceita) {
       `;
     }
   });
-  
+
   divLista.innerHTML = listaHtml;
 }
 
 function toggleCheckbox(element) {
   const label = element.closest('label');
   const text = label.querySelector('.checkbox-text');
-  
+
   if (element.checked) {
-      label.style.backgroundColor = 'rgba(38, 38, 38, 0.4)';
-      label.style.borderColor = 'rgba(38, 38, 38, 0.5)';
-      text.style.textDecoration = 'line-through';
-      text.style.color = '#737373';
+    label.style.backgroundColor = 'rgba(38, 38, 38, 0.4)';
+    label.style.borderColor = 'rgba(38, 38, 38, 0.5)';
+    text.style.textDecoration = 'line-through';
+    text.style.color = '#737373';
   } else {
-      label.style.backgroundColor = '#262626';
-      label.style.borderColor = '#404040';
-      text.style.textDecoration = 'none';
-      text.style.color = '#e5e5e5';
+    label.style.backgroundColor = '#262626';
+    label.style.borderColor = '#404040';
+    text.style.textDecoration = 'none';
+    text.style.color = '#e5e5e5';
   }
 }
 
@@ -201,9 +191,9 @@ async function carregarHistorico() {
   const res = await fetch(API);
   const data = await res.json();
   const lista = document.getElementById("lista-historico");
-  if(!lista) return;
+  if (!lista) return;
   lista.innerHTML = "";
-  
+
   data.forEach(r => {
     lista.innerHTML += `
       <div class="historico-card" style="margin-bottom: 16px;">
