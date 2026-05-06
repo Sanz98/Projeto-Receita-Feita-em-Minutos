@@ -1,181 +1,216 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feito em Minutos</title>
   <link rel="stylesheet" href="Style/styles.css">
 </head>
+
 <body>
 
-<header class="top-header">
-  <div class="logo-container">
-    <div class="logo-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+  <header class="top-header">
+    <div class="logo-container">
+      <div class="logo-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+      <h1>Feito em Minutos</h1>
     </div>
-    <h1>Feito em Minutos</h1>
-  </div>
-</header>
+  </header>
 
-<nav class="menu">
-  <div class="menu-container">
-    <button class="active" onclick="navegar('home', this)">Início</button>
-    <button onclick="navegar('ingredientes', this)">Ingredientes</button>
-    <button onclick="navegar('compras', this)">Compras</button>
-    <button onclick="navegar('pedidos', this)">Pedidos (Shopper)</button>
-    <button onclick="navegar('historico', this)">Histórico</button>
-    <button onclick="navegar('avaliacao', this)">Avaliação</button>
-    <button onclick="navegar('confirmacao', this)">Confirmação</button>
-    <button onclick="sair()" style="color: #ef4444;">Sair</button>
-  </div>
-</nav>
-
-<main class="container">
-  
-  <section id="home" class="pagina">
-    <div class="hero-card">
-      <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Cozinha">
-        <div class="hero-gradient"></div>
-      </div>
-      <div class="hero-content text-center">
-        <h2>Transforme vídeos em receitas</h2>
-        <p class="subtitle">Cole o link de um vídeo de receita ou digite manualmente para extrair os ingredientes.</p>
-        <div class="form">
-          <!-- IDs CORRIGIDOS AQUI -->
-          <input type="text" id="input-nome" placeholder="Nome da receita">
-          <input type="text" id="input-ingredientes" placeholder="Ingredientes (ex: Carne, pão)">
-          <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
-        </div>
-      </div>
+  <nav class="menu">
+    <div class="menu-container">
+      <button class="active" onclick="navegar('home', this)">Início</button>
+      <button onclick="navegar('ingredientes', this)">Ingredientes</button>
+      <button onclick="navegar('compras', this)">Compras</button>
+      <button onclick="navegar('pedidos', this)">Pedidos (Shopper)</button>
+      <button onclick="navegar('historico', this)">Histórico</button>
+      <button onclick="navegar('avaliacao', this)">Avaliação</button>
+      <button onclick="navegar('confirmacao', this)">Confirmação</button>
+      <button onclick="sair()" style="color: #ef4444;">Sair</button>
     </div>
-    <div id="lista" class="grid-lista"></div>
-  </section>
+  </nav>
 
-  <!-- AGORA ESSE É O ÚNICO "ingredientes" DA PÁGINA -->
-  <section id="ingredientes" class="pagina" style="display: none;">
-    <div class="hero-card">
-      <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1760537831506-f2209c4b5ad6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGluZ3JlZGllbnRzJTIwdmVnZXRhYmxlcyUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080" alt="Ingredientes">
-        <div class="hero-gradient"></div>
-      </div>
-      <div class="hero-content">
-        <h2 id="titulo-ingredientes">Ingredientes da receita</h2>
-        <div id="lista-ingredientes" class="grid-lista" style="margin-top: 15px;">
-          <p class="empty-text">Nenhuma receita selecionada. Vá ao Início e clique no ícone do olho na receita.</p>
-        </div>
-        <div class="utensilios-box">
-          <h3>Utensílios necessários</h3>
-          <ul>
-            <li><span>•</span> Panela média ou frigideira</li>
-            <li><span>•</span> Faca e Tábua de corte</li>
-          </ul>
-        </div>
-        <div class="action-buttons mt-24">
-          <button class="btn-secondary" onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar</button>
-          <button class="btn-primary shadow-lg" onclick="navegar('compras', document.querySelectorAll('.menu button')[2])">Continuar</button>
-        </div>
-      </div>
-    </div>
-  </section>
+  <main class="container">
 
-  <section id="compras" class="pagina" style="display: none;">
-    <div class="hero-card">
-      <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1661313647610-de652aca54c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncm9jZXJ5JTIwc2hvcHBpbmclMjBwYXBlciUyMGJhZyUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Compras">
-        <div class="hero-gradient"></div>
-      </div>
-      <div class="hero-content">
-        <h2>Lista de compras</h2>
-        <div class="compras-lista" id="itens-compras">
-          <div class="compra-item"><span>Arroz</span><span class="badge">1kg</span></div>
-          <div class="compra-item"><span>Tomate</span><span class="badge">2 unidades</span></div>
+    <section id="home" class="pagina">
+      <div class="hero-card">
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Cozinha">
+          <div class="hero-gradient"></div>
         </div>
-        <button class="btn-dashed mt-24"><span class="plus-icon">+</span> Adicionar item manual</button>
-        <div class="total-box">
-          <button class="btn-primary shadow-lg" onclick="navegar('pedidos', document.querySelectorAll('.menu button')[3])">Confirmar pedido</button>
-        </div>
-      </div>
-    </div>
-  </section>
+        <div class="hero-content text-center">
+          <h2>Transforme vídeos em receitas</h2>
+          <p class="subtitle">Cole o link de um vídeo de receita ou digite manualmente para extrair os ingredientes.</p>
+          <div class="form">
+            <!-- 1. Nome da receita -->
+            <input type="text" id="input-nome" placeholder="Nome da receita" required>
 
-  <section id="pedidos" class="pagina" style="display: none;">
-    <div class="hero-card">
-      <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1761499468846-695fc79d2950?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGVsaXZlcnklMjByaWRlciUyMHVyYmFuJTIwZGFya3xlbnwxfHx8fDE3Nzc5MjQxNDd8MA&ixlib=rb-4.1.0&q=80&w=1080" alt="Shopper">
-        <div class="hero-gradient"></div>
+            <!-- 2. Link do vídeo (O ID DEVE ser "input-link" para funcionar com o seu script.js) -->
+            <input type="url" id="input-link" placeholder="Cole o link do vídeo (ex: YouTube) - Opcional">
+
+            <!-- 3. Ingredientes -->
+            <input type="text" id="input-ingredientes" placeholder="Ingredientes (ex: Carne, pão)" required>
+
+            <!-- 4. Botão de salvar chamando a função correta -->
+            <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
+          </div>
+        </div>
       </div>
-      <div class="hero-content">
-        <h2 style="margin-bottom: 24px;">Pedidos disponíveis</h2>
-        <div class="grid-lista">
-          <div class="shopper-card">
-            <div class="shopper-header">
-              <h3>Pedido #1234</h3><span class="badge time">~15 min</span>
-            </div>
-            <ul class="shopper-items">
-              <li>Arroz (1kg)</li><li>Tomate (2 un)</li>
+      <div id="lista" class="grid-lista"></div>
+    </section>
+
+    <!-- AGORA ESSE É O ÚNICO "ingredientes" DA PÁGINA -->
+    <section id="ingredientes" class="pagina" style="display: none;">
+      <div class="hero-card">
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1760537831506-f2209c4b5ad6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGluZ3JlZGllbnRzJTIwdmVnZXRhYmxlcyUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Ingredientes">
+          <div class="hero-gradient"></div>
+        </div>
+        <div class="hero-content">
+          <h2 id="titulo-ingredientes">Ingredientes da receita</h2>
+          <div id="lista-ingredientes" class="grid-lista" style="margin-top: 15px;">
+            <p class="empty-text">Nenhuma receita selecionada. Vá ao Início e clique no ícone do olho na receita.</p>
+          </div>
+          <div class="utensilios-box">
+            <h3>Utensílios necessários</h3>
+            <ul>
+              <li><span>•</span> Panela média ou frigideira</li>
+              <li><span>•</span> Faca e Tábua de corte</li>
             </ul>
-            <div class="shopper-footer">
-              <span class="location">Centro - 2.5km</span>
-              <button class="btn-primary sm-btn" onclick="navegar('confirmacao', document.querySelectorAll('.menu button')[6])">Aceitar</button>
+          </div>
+          <div class="action-buttons mt-24">
+            <button class="btn-secondary"
+              onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar</button>
+            <button class="btn-primary shadow-lg"
+              onclick="navegar('compras', document.querySelectorAll('.menu button')[2])">Continuar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="compras" class="pagina" style="display: none;">
+      <div class="hero-card">
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1661313647610-de652aca54c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncm9jZXJ5JTIwc2hvcHBpbmclMjBwYXBlciUyMGJhZyUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Compras">
+          <div class="hero-gradient"></div>
+        </div>
+        <div class="hero-content">
+          <h2>Lista de compras</h2>
+          <div class="compras-lista" id="itens-compras">
+            <div class="compra-item"><span>Arroz</span><span class="badge">1kg</span></div>
+            <div class="compra-item"><span>Tomate</span><span class="badge">2 unidades</span></div>
+          </div>
+          <button class="btn-dashed mt-24"><span class="plus-icon">+</span> Adicionar item manual</button>
+          <div class="total-box">
+            <button class="btn-primary shadow-lg"
+              onclick="navegar('pedidos', document.querySelectorAll('.menu button')[3])">Confirmar pedido</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pedidos" class="pagina" style="display: none;">
+      <div class="hero-card">
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1761499468846-695fc79d2950?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGVsaXZlcnklMjByaWRlciUyMHVyYmFuJTIwZGFya3xlbnwxfHx8fDE3Nzc5MjQxNDd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Shopper">
+          <div class="hero-gradient"></div>
+        </div>
+        <div class="hero-content">
+          <h2 style="margin-bottom: 24px;">Pedidos disponíveis</h2>
+          <div class="grid-lista">
+            <div class="shopper-card">
+              <div class="shopper-header">
+                <h3>Pedido #1234</h3><span class="badge time">~15 min</span>
+              </div>
+              <ul class="shopper-items">
+                <li>Arroz (1kg)</li>
+                <li>Tomate (2 un)</li>
+              </ul>
+              <div class="shopper-footer">
+                <span class="location">Centro - 2.5km</span>
+                <button class="btn-primary sm-btn"
+                  onclick="navegar('confirmacao', document.querySelectorAll('.menu button')[6])">Aceitar</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="historico" class="pagina" style="display: none;">
-    <div class="hero-card">
-      <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1597968203824-49876d917f75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWNpcGUlMjBib29rJTIwdmludGFnZSUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Histórico">
-        <div class="hero-gradient"></div>
+    <section id="historico" class="pagina" style="display: none;">
+      <div class="hero-card">
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1597968203824-49876d917f75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWNpcGUlMjBib29rJTIwdmludGFnZSUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Histórico">
+          <div class="hero-gradient"></div>
+        </div>
+        <div class="hero-content">
+          <h2>Histórico de Receitas</h2>
+          <div id="lista-historico" class="grid-lista" style="margin-bottom: 24px;"></div>
+        </div>
       </div>
-      <div class="hero-content">
-        <h2>Histórico de Receitas</h2>
-        <div id="lista-historico" class="grid-lista" style="margin-bottom: 24px;"></div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="avaliacao" class="pagina" style="display: none;">
-    <div class="hero-card" style="padding-top: 32px;">
-      <div class="hero-content">
-        <h2 style="font-size: 1.5rem; text-align: left; margin-bottom: 32px;">Avaliar entrega</h2>
-        <div class="form">
-          <p style="text-align: center;">Como foi a experiência do pedido <span style="color:#f5f5f5; font-weight:bold;">#1237</span>?</p>
-          <div class="rating-box">
-            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+    <section id="avaliacao" class="pagina" style="display: none;">
+      <div class="hero-card" style="padding-top: 32px;">
+        <div class="hero-content">
+          <h2 style="font-size: 1.5rem; text-align: left; margin-bottom: 32px;">Avaliar entrega</h2>
+          <div class="form">
+            <p style="text-align: center;">Como foi a experiência do pedido <span
+                style="color:#f5f5f5; font-weight:bold;">#1237</span>?</p>
+            <div class="rating-box">
+              <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
+                class="star">★</span><span class="star">★</span>
+            </div>
+            <textarea placeholder="Comentário (opcional)..." class="custom-textarea"></textarea>
+            <button class="btn-primary" style="margin-top: 16px;">Enviar avaliação</button>
           </div>
-          <textarea placeholder="Comentário (opcional)..." class="custom-textarea"></textarea>
-          <button class="btn-primary" style="margin-top: 16px;">Enviar avaliação</button>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="confirmacao" class="pagina" style="display: none;">
-    <div class="hero-card">
-      <div class="hero-image" style="height: 224px;">
-        <img src="https://images.unsplash.com/photo-1547478267-54ce493dd7d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBoZWFsdGh5JTIwZGlubmVyJTIwZGFyayUyMHBsYXRlfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080" alt="Confirmação">
-        <div class="hero-gradient" style="background: linear-gradient(to top, var(--bg-header) 20%, rgba(23,23,23,0.6), transparent);"></div>
-      </div>
-      <div class="hero-content text-center pt-8">
-        <h2>Pedido confirmado!</h2>
-        <p>Sua lista está sendo preparada.</p>
-        <div class="confirm-box">
-          <div class="confirm-row"><span>Número do pedido</span><strong>#1237</strong></div>
-          <div class="confirm-row no-border"><span>Tempo estimado</span><strong style="color: #10b981;">30-40 min</strong></div>
+    <section id="confirmacao" class="pagina" style="display: none;">
+      <div class="hero-card">
+        <div class="hero-image" style="height: 224px;">
+          <img
+            src="https://images.unsplash.com/photo-1547478267-54ce493dd7d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBoZWFsdGh5JTIwZGlubmVyJTIwZGFyayUyMHBsYXRlfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+            alt="Confirmação">
+          <div class="hero-gradient"
+            style="background: linear-gradient(to top, var(--bg-header) 20%, rgba(23,23,23,0.6), transparent);"></div>
         </div>
-        <div class="form-buttons mt-24" style="display:flex; flex-direction:column; gap:16px;">
-          <button class="btn-primary shadow-lg w-full" onclick="navegar('avaliacao', document.querySelectorAll('.menu button')[5])">Acompanhar pedido</button>
-          <button class="btn-secondary w-full" onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Nova receita</button>
+        <div class="hero-content text-center pt-8">
+          <h2>Pedido confirmado!</h2>
+          <p>Sua lista está sendo preparada.</p>
+          <div class="confirm-box">
+            <div class="confirm-row"><span>Número do pedido</span><strong>#1237</strong></div>
+            <div class="confirm-row no-border"><span>Tempo estimado</span><strong style="color: #10b981;">30-40
+                min</strong></div>
+          </div>
+          <div class="form-buttons mt-24" style="display:flex; flex-direction:column; gap:16px;">
+            <button class="btn-primary shadow-lg w-full"
+              onclick="navegar('avaliacao', document.querySelectorAll('.menu button')[5])">Acompanhar pedido</button>
+            <button class="btn-secondary w-full"
+              onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Nova receita</button>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-</main>
-<script src="script.js"></script>
+  </main>
+  <script src="script.js"></script>
 </body>
+
 </html>

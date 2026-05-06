@@ -11,6 +11,32 @@ function sair() {
 const API = "http://localhost:3000/receitas";
 let receitasGlobais = [];
 
+// ==========================================
+// NOVO: Função para gerar a imagem dinâmica
+// ==========================================
+function gerarImagemReceita(nome, link) {
+  // 1. Verifica se tem link do YouTube e puxa a capa (thumbnail)
+  if (link && (link.includes('youtube.com/watch?v=') || link.includes('youtu.be/'))) {
+      let videoId = '';
+      if (link.includes('youtube.com/watch?v=')) {
+          videoId = link.split('v=')[1].substring(0, 11);
+      } else if (link.includes('youtu.be/')) {
+          videoId = link.split('youtu.be/')[1].substring(0, 11);
+      }
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  
+  // 2. Se não tem link de vídeo, busca uma foto de comida baseada na primeira palavra (ex: "pizza")
+  if (nome) {
+      const palavraChave = encodeURIComponent(nome.trim().split(' ')[0]);
+      return `https://loremflickr.com/320/240/${palavraChave},food/all`;
+  }
+
+  // 3. Fallback (A imagem padrão original que você já usava)
+  return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'; 
+}
+// ==========================================
+
 function navegar(idPagina, btnElement) {
   const paginas = document.querySelectorAll('.pagina');
   paginas.forEach(pagina => pagina.style.display = 'none');
@@ -39,6 +65,7 @@ async function carregar() {
     lista.innerHTML = "";
     
     receitasGlobais.forEach(r => {
+      // Agora ele puxa a imagem salva do banco, ou o fallback
       const img = r.imagem || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
       lista.innerHTML += `
         <div class="historico-card" style="padding: 16px; margin-bottom: 16px;">
@@ -62,21 +89,30 @@ async function carregar() {
 }
 
 async function criarReceita() {
-  // ATUALIZADO PARA OS NOVOS IDs
   const nome = document.getElementById("input-nome").value;
   const ingredientes = document.getElementById("input-ingredientes").value;
   
-  if (!nome || !ingredientes) return alert("Preencha todos os campos!");
+  // Tenta capturar o input de link (se ele não existir no HTML ainda, retorna vazio)
+  const linkInput = document.getElementById("input-link");
+  const link = linkInput ? linkInput.value : "";
+  
+  if (!nome || !ingredientes) return alert("Preencha todos os campos obrigatórios (nome e ingredientes)!");
+
+  // Chama a nossa nova função para gerar a URL da imagem!
+  const urlImagemGerada = gerarImagemReceita(nome, link);
 
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nome, ingredientes })
+    // Adicionamos a URL da imagem (e o link, se quiser guardar) para ir pro BackEnd
+    body: JSON.stringify({ nome, ingredientes, link, imagem: urlImagemGerada })
   });
   
   // Limpa as caixinhas
   document.getElementById("input-nome").value = "";
   document.getElementById("input-ingredientes").value = "";
+  if(linkInput) linkInput.value = ""; // Limpa o link também
+  
   carregar();
 }
 
