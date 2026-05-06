@@ -19,5 +19,15 @@
     "id": 4,
     "nome": "pizza",
     "ingredientes": "queijo,massa e molho de tomate"
+  },
+  {
+    "id": 5,
+    "nome": "Receita Mágica Extraída",
+    "ingredientes": "Ingredientes em processamento (No futuro, a IA listará tudo aqui: ex. Farinha, Ovo, Leite)"
+  },
+  {
+    "id": 6,
+    "nome": "Receita Mágica Extraída",
+    "ingredientes": "Ingredientes em processamento (No futuro, a IA listará tudo aqui: ex. Farinha, Ovo, Leite)"
   }
 ]
