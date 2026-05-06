@@ -19,25 +19,26 @@ function listar(req, res) {
 }
 
 // POST
-function criar(req, res) {
-  const { nome, ingredientes, imagem } = req.body;
+// Exemplo de como a sua função deve ficar no receitaController.js
+exports.criarReceita = (req, res) => {
+    // 1. Receba a imagem e o link do FrontEnd
+    const { nome, ingredientes, link, imagem } = req.body; 
+    
+    let receitas = lerReceitas(); // Sua função que lê o JSON
 
-  const data = fs.readFileSync(caminho, "utf-8");
-  const receitas = JSON.parse(data);
+    const novaReceita = {
+        id: Date.now().toString(), // Ou a forma como você gera o ID
+        nome: nome,
+        ingredientes: ingredientes,
+        link: link || "",
+        imagem: imagem || "" // 2. SALVE A IMAGEM AQUI!
+    };
 
-  const nova = {
-    id: receitas.length + 1,
-    nome,
-    ingredientes,
-    imagem
-  };
+    receitas.push(novaReceita);
+    salvarReceitas(receitas); // Sua função que salva no JSON
 
-  receitas.push(nova);
-
-  fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
-
-  res.status(201).json(nova);
-}
+    res.status(201).json(novaReceita);
+};
 
 // PUT
 function atualizar(req, res) {

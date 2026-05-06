@@ -15,22 +15,23 @@ let receitasGlobais = [];
 // NOVO: Função para gerar a imagem dinâmica
 // ==========================================
 function gerarImagemReceita(nome, link) {
-  // 1. Tenta extrair miniatura do YouTube de forma profissional
+  // 1. Link do YouTube: Extração Perfeita (ignora ?si= e pega apenas o ID do vídeo)
   if (link) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = link.match(regExp);
-    if (match && match[2].length === 11) {
-      return `https://img.youtube.com/vi/${match[2]}/mqdefault.jpg`;
+    const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const match = link.match(regex);
+    if (match && match[1].length === 11) {
+      // Puxa a capa do vídeo em alta qualidade (hqdefault)
+      return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
     }
   }
 
-  // 2. Se for manual ou link comum, busca uma imagem real baseada no NOME
-  // Se o nome for o padrão da IA, tentamos usar a palavra 'food' para não vir imagem aleatória
-  const busca = (nome && nome !== "Receita Mágica Extraída") ? nome : "delicious food";
+  // 2. Se for sem link: Busca imagem de receita com base no nome
+  const busca = (nome && nome !== "Receita via Link") ? nome : "delicious recipe";
   const palavraChave = encodeURIComponent(busca.trim().split(' ')[0]);
 
-  // Usamos o LoremFlickr com a tag 'recipe' para garantir que venha comida
-  return `https://loremflickr.com/400/300/${palavraChave},recipe/all`;
+  // O '?lock=' com um número aleatório garante que imagens da mesma palavra NÃO sejam repetidas!
+  const randomID = Math.floor(Math.random() * 1000);
+  return `https://loremflickr.com/400/300/${palavraChave},food/all?lock=${randomID}`;
 }
 // ==========================================
 
@@ -56,17 +57,17 @@ function navegar(idPagina, btnElement) {
 async function carregar() {
   try {
     const res = await fetch(API);
-    receitasGlobais = await res.json(); 
+    receitasGlobais = await res.json();
     const lista = document.getElementById("lista");
-    if(!lista) return;
+    if (!lista) return;
     lista.innerHTML = "";
-    
+
     receitasGlobais.forEach(r => {
       // AQUI ESTÁ A CORREÇÃO:
       // Puxa a imagem que foi salva no banco (r.imagem). 
       // Se por algum motivo não tiver imagem salva, usa a busca de comida.
       const img = r.imagem || "https://loremflickr.com/400/300/food,recipe/all";
-      
+
       lista.innerHTML += `
         <div class="historico-card" style="padding: 16px; margin-bottom: 16px; display: flex; align-items: center;">
           <img src="${img}" alt="${r.nome}" style="width: 64px; height: 64px; border-radius: 8px; object-fit: cover; margin-right: 16px;">
@@ -83,7 +84,7 @@ async function carregar() {
         </div>
       `;
     });
-  } catch(e) {
+  } catch (e) {
     console.error("Erro ao carregar:", e);
   }
 }
