@@ -1,0 +1,83 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: API Receita Feita em Minutos
+meta:
+  id: wrk_09dccc84169a48609829bc2f68a13ec9
+  created: 1777942037441
+  modified: 1778095746177
+  description: ""
+collection:
+  - name: CRUD Receitas
+    meta:
+      id: fld_ec3a7499682542fc9bf94b97aab58044
+      created: 1778095769053
+      modified: 1778095769053
+      sortKey: -1778095769053
+      description: ""
+    children:
+      - url: http://localhost:3000/receitas
+        name: Listar Receitas
+        meta:
+          id: req_74030a8a2cf9467483b6fe37fdf7980a
+          created: 1778095799169
+          modified: 1778095842407
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813486
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/receitas/123456789
+        name: Deletar Receitas
+        meta:
+          id: req_2ef925fe5659456e8d8073c3bf5092e3
+          created: 1778095891139
+          modified: 1778095909223
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813586
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: CRUD Usuários
+    meta:
+      id: fld_c606edc333f949efb986b05d0982441a
+      created: 1778095788895
+      modified: 1778095788895
+      sortKey: -1778095788895
+      description: ""
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_8277d1ec95f045554f2f1971e2e41bf6643e222f
+    created: 1778095746204
+    modified: 1778095746204
+environments:
+  name: Base Environment
+  meta:
+    id: env_8277d1ec95f045554f2f1971e2e41bf6643e222f
+    created: 1777942037499
+    modified: 1778095746175
+    isPrivate: false
