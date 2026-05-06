@@ -89,29 +89,54 @@ async function carregar() {
 }
 
 async function criarReceita() {
-  const nome = document.getElementById("input-nome").value;
-  const ingredientes = document.getElementById("input-ingredientes").value;
+  let nome = document.getElementById("input-nome").value;
+  let ingredientes = document.getElementById("input-ingredientes").value;
   
-  // Tenta capturar o input de link (se ele não existir no HTML ainda, retorna vazio)
   const linkInput = document.getElementById("input-link");
   const link = linkInput ? linkInput.value : "";
   
-  if (!nome || !ingredientes) return alert("Preencha todos os campos obrigatórios (nome e ingredientes)!");
+  // 1. Verifica se TUDO está vazio
+  if (!nome && !ingredientes && !link) {
+      return alert("Por favor, preencha o Nome da receita ou simplesmente cole um Link do vídeo!");
+  }
 
-  // Chama a nossa nova função para gerar a URL da imagem!
+  // 2. A MÁGICA: O usuário só colocou o link!
+  if (link && (!nome || !ingredientes)) {
+      // Aqui, futuramente, você fará um "fetch" para o seu BackEnd pedindo para a IA ler o link.
+      // Como estamos preparando o terreno, vamos simular a resposta da IA:
+      
+      alert("🪄 Analisando o vídeo e extraindo receita... (Simulação)");
+      
+      // Se não tem nome, cria um automático
+      if (!nome) {
+          nome = "Receita Mágica Extraída";
+      }
+      
+      // Se não tem ingredientes, cria um texto provisório
+      if (!ingredientes) {
+          ingredientes = "Ingredientes em processamento (No futuro, a IA listará tudo aqui: ex. Farinha, Ovo, Leite)";
+      }
+  }
+
+  // Se o usuário não colocou nem link nem ingredientes, mas colocou nome
+  if (!ingredientes && !link) {
+      ingredientes = "Nenhum ingrediente informado.";
+  }
+
+  // Gera a imagem (Youtube ou Genérica) - a função que criamos antes!
   const urlImagemGerada = gerarImagemReceita(nome, link);
 
+  // Envia para o banco de dados
   await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // Adicionamos a URL da imagem (e o link, se quiser guardar) para ir pro BackEnd
     body: JSON.stringify({ nome, ingredientes, link, imagem: urlImagemGerada })
   });
   
   // Limpa as caixinhas
   document.getElementById("input-nome").value = "";
   document.getElementById("input-ingredientes").value = "";
-  if(linkInput) linkInput.value = ""; // Limpa o link também
+  if(linkInput) linkInput.value = ""; 
   
   carregar();
 }

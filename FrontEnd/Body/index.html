@@ -49,16 +49,15 @@
           <p class="subtitle">Cole o link de um vídeo de receita ou digite manualmente para extrair os ingredientes.</p>
           <div class="form">
             <!-- 1. Nome da receita -->
-            <input type="text" id="input-nome" placeholder="Nome da receita" required>
+            <div class="form">
+              <input type="text" id="input-nome" placeholder="Nome da receita (Opcional)">
 
-            <!-- 2. Link do vídeo (O ID DEVE ser "input-link" para funcionar com o seu script.js) -->
-            <input type="url" id="input-link" placeholder="Cole o link do vídeo (ex: YouTube) - Opcional">
+              <input type="url" id="input-link" placeholder="Cole o link do vídeo (ex: YouTube)">
 
-            <!-- 3. Ingredientes -->
-            <input type="text" id="input-ingredientes" placeholder="Ingredientes (ex: Carne, pão)" required>
+              <input type="text" id="input-ingredientes" placeholder="Ingredientes (Opcional)">
 
-            <!-- 4. Botão de salvar chamando a função correta -->
-            <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
+              <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
+            </div>
           </div>
         </div>
       </div>
