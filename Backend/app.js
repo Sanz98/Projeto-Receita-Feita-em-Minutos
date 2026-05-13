@@ -15,6 +15,12 @@ app.use(express.json());
 const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
 const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
 
+// Importar as rotas de receitas
+const rotasReceitas = require('./src/routes/receitas');
+
+// Dizer ao Express para usar estas rotas quando o caminho começar por "/receitas"
+app.use('/receitas', rotasReceitas);
+
 // GET (listar receitas)
 app.get("/receitas", (req, res) => {
   try {

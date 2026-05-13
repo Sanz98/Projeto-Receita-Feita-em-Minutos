@@ -1,74 +1,87 @@
 const fs = require("fs");
 
-const caminho = "./data/receitas.json";
+// Caminho corrigido com D maiúsculo
+const caminho = "./Data/receitas.json";
 
-// GET
+// LER RECEITAS (GET)
 function listar(req, res) {
-  const data = fs.readFileSync(caminho, "utf-8");
-  let receitas = JSON.parse(data);
+  try {
+    const data = fs.readFileSync(caminho, "utf-8");
+    let receitas = JSON.parse(data);
 
-  const { nome } = req.query;
-
-  if (nome) {
-    receitas = receitas.filter(r =>
-      r.nome.toLowerCase().includes(nome.toLowerCase())
-    );
+    const { nome } = req.query;
+    if (nome) {
+      receitas = receitas.filter(r =>
+        r.nome.toLowerCase().includes(nome.toLowerCase())
+      );
+    }
+    res.status(200).json(receitas);
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao listar receitas" });
   }
-
-  res.json(receitas);
 }
 
-// POST
-// Exemplo de como a sua função deve ficar no receitaController.js
-exports.criarReceita = (req, res) => {
-    // 1. Receba a imagem e o link do FrontEnd
-    const { nome, ingredientes, link, imagem } = req.body; 
-    
-    let receitas = lerReceitas(); // Sua função que lê o JSON
+// CRIAR RECEITA (POST)
+function criar(req, res) {
+  try {
+    const { nome, ingredientes, link, imagem } = req.body;
+
+    const data = fs.readFileSync(caminho, "utf-8");
+    let receitas = JSON.parse(data);
 
     const novaReceita = {
-        id: Date.now().toString(), // Ou a forma como você gera o ID
-        nome: nome,
-        ingredientes: ingredientes,
-        link: link || "",
-        imagem: imagem || "" // 2. SALVE A IMAGEM AQUI!
+      id: Date.now().toString(),
+      nome: nome || "Nova Receita",
+      ingredientes: ingredientes || "",
+      link: link || "",
+      imagem: imagem || ""
     };
 
     receitas.push(novaReceita);
-    salvarReceitas(receitas); // Sua função que salva no JSON
+    fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
 
     res.status(201).json(novaReceita);
-};
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao criar receita" });
+  }
+}
 
-// PUT
+// ATUALIZAR (PUT)
 function atualizar(req, res) {
-  const { id } = req.params;
-  const { nome, ingredientes, imagem } = req.body;
+  try {
+    const { id } = req.params;
+    const { nome, ingredientes, imagem } = req.body;
 
-  const data = fs.readFileSync(caminho, "utf-8");
-  let receitas = JSON.parse(data);
+    const data = fs.readFileSync(caminho, "utf-8");
+    let receitas = JSON.parse(data);
 
-  receitas = receitas.map(r =>
-    r.id == id ? { ...r, nome, ingredientes, imagem } : r
-  );
+    receitas = receitas.map(r =>
+      r.id == id ? { ...r, nome, ingredientes, imagem } : r
+    );
 
-  fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
-
-  res.send("Atualizado!");
+    fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
+    res.status(200).json({ mensagem: "Atualizado!" });
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao atualizar receita" });
+  }
 }
 
-// DELETE
+// DELETAR (DELETE)
 function deletar(req, res) {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const data = fs.readFileSync(caminho, "utf-8");
-  let receitas = JSON.parse(data);
+    const data = fs.readFileSync(caminho, "utf-8");
+    let receitas = JSON.parse(data);
 
-  receitas = receitas.filter(r => r.id != id);
+    receitas = receitas.filter(r => r.id != id);
 
-  fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
-
-  res.send("Deletado!");
+    fs.writeFileSync(caminho, JSON.stringify(receitas, null, 2));
+    res.status(200).json({ mensagem: "Deletado!" });
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao deletar receita" });
+  }
 }
 
+// Exportar tudo corretamente!
 module.exports = { listar, criar, atualizar, deletar };
