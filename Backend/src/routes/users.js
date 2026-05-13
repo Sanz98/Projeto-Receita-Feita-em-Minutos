@@ -8,6 +8,9 @@ const userController = require('../controllers/userController');
 
 // Suas rotas existentes (login, cadastro, etc) ...
 
+//  rota deletar usuario 
+router.delete('/:id', userController.deletar);
+
 // Novas rotas para recuperação de senha
 router.post('/esqueci-senha', userController.solicitarRecuperacao);
 router.post('/redefinir-senha', userController.redefinirSenha);
@@ -39,5 +42,7 @@ router.post("/login", (req, res) => {
     res.status(500).send("Erro no login");
   }
 });
+
+
 
 module.exports = router;

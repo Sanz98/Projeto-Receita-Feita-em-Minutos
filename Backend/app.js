@@ -32,13 +32,13 @@ app.post("/receitas", (req, res) => {
     const { nome, ingredientes } = req.body;
     const data = fs.readFileSync(caminhoReceitas, "utf-8");
     const receitas = JSON.parse(data);
-         
+
     const nova = {
       id: receitas.length + 1,
       nome,
       ingredientes,
     };
-         
+
     receitas.push(nova);
     fs.writeFileSync(caminhoReceitas, JSON.stringify(receitas, null, 2));
     res.status(201).json(nova);
@@ -54,11 +54,11 @@ app.put("/receitas/:id", (req, res) => {
     const { nome, ingredientes } = req.body;
     const data = fs.readFileSync(caminhoReceitas, "utf-8");
     let receitas = JSON.parse(data);
-         
+
     receitas = receitas.map(r =>
       r.id == id ? { ...r, nome, ingredientes } : r
     );
-         
+
     fs.writeFileSync(caminhoReceitas, JSON.stringify(receitas, null, 2));
     res.send("Atualizado!");
   } catch (error) {
@@ -72,9 +72,9 @@ app.delete("/receitas/:id", (req, res) => {
     const { id } = req.params;
     const data = fs.readFileSync(caminhoReceitas, "utf-8");
     let receitas = JSON.parse(data);
-         
+
     receitas = receitas.filter(r => r.id != id);
-         
+
     fs.writeFileSync(caminhoReceitas, JSON.stringify(receitas, null, 2));
     res.send("Deletado!");
   } catch (error) {
@@ -86,15 +86,15 @@ app.delete("/receitas/:id", (req, res) => {
 app.post("/login", (req, res) => {
   try {
     const { usuario, senha } = req.body;
-         
+
     // É preciso ler o arquivo de dados primeiro
     const data = fs.readFileSync(caminhoUsuarios, "utf-8");
     const usuarios = JSON.parse(data);
-         
+
     const user = usuarios.find(
       u => u.usuario === usuario && u.senha === senha
     );
-         
+
     if (user) {
       res.status(200).json({ mensagem: "Login OK" });
     } else {
@@ -144,6 +144,21 @@ app.post('/users/register', async (req, res) => {
     if (usuarioExiste) {
       return res.status(400).json({ mensagem: "Nome de usuário já existe!" });
     }
+
+    // GET (listar usuários)
+    app.get("/users", (req, res) => {
+      try {
+        const data = fs.readFileSync('./Data/users.json', "utf-8");
+        const usuarios = JSON.parse(data);
+
+        // Por segurança, é boa prática não devolver as senhas criptografadas
+        const usuariosSemSenha = usuarios.map(u => ({ id: u.id, username: u.username }));
+
+        res.status(200).json(usuariosSemSenha);
+      } catch (error) {
+        res.status(500).json({ mensagem: "Erro ao buscar usuários" });
+      }
+    });
 
     // Criptografa a senha antes de salvar
     const senhaCriptografada = await bcrypt.hash(password, 10);

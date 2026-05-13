@@ -13,5 +13,10 @@
     "id": 3,
     "username": "bot1",
     "password": "$2b$10$he3LseU0.qfpmwM4uueSTus.mpIprnoFi46oet3OAMT5ujcR3M4vy"
+  },
+  {
+    "id": 4,
+    "username": "usuario",
+    "password": "$2b$10$V1Q1JK5XU9FHMI77ez9m7.zXAgaCanG4t72V.uJqD42OJfcWDOEWa"
   }
 ]
