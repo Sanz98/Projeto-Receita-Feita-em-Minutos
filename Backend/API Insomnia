@@ -1,0 +1,176 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: API Receita Feita em Minutos
+meta:
+  id: wrk_97b8cf8e8dfd4879a86289640972d979
+  created: 1778730547034
+  modified: 1778730547034
+  description: ""
+collection:
+  - name: CRUD Receitas
+    meta:
+      id: fld_894bb8f36520430fa55572a1d3d8a478
+      created: 1778095769053
+      modified: 1778095769053
+      sortKey: -1778095769053
+      description: ""
+    children:
+      - url: http://localhost:3000/receitas
+        name: Listar Receita
+        meta:
+          id: req_4e9125d1ce1541968c97145aadd724d1
+          created: 1778095799169
+          modified: 1778730587257
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813486
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/receitas/123456789
+        name: Deletar Receita
+        meta:
+          id: req_e652836dd5644d06a8e467493801435f
+          created: 1778095891139
+          modified: 1778730583631
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813586
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: ""
+        name: Criar Receita
+        meta:
+          id: req_26509ca0c5b847859775e8a7d718a7b3
+          created: 1778730591966
+          modified: 1778730613821
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813386
+        method: POST
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: CRUD Usuários
+    meta:
+      id: fld_452f6be6ea4a434d9b958150b7acf359
+      created: 1778095788895
+      modified: 1778095788895
+      sortKey: -1778095788895
+      description: ""
+    children:
+      - url: ""
+        name: Listar Usuario
+        meta:
+          id: req_325a146f537b4644a1953582fe0735a7
+          created: 1778176400921
+          modified: 1778730581105
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400921
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: ""
+        name: Criar Usuário
+        meta:
+          id: req_147848e415e64867b1f9f1730e8bfcf6
+          created: 1778176426594
+          modified: 1778730571901
+          isPrivate: false
+          description: ""
+          sortKey: -1778176401021
+        method: POST
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: ""
+        name: Deletar Usuário
+        meta:
+          id: req_8c5a2f1917c64ef4966b4b180b53e2f9
+          created: 1778176456579
+          modified: 1778730575781
+          isPrivate: false
+          description: ""
+          sortKey: -1778176401121
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_3adf2eef39d549bd84d5eea9b7e67279
+    created: 1778095746204
+    modified: 1778095746204
+environments:
+  name: Base Environment
+  meta:
+    id: env_3a923a2686354f209f213df50ca858be
+    created: 1777942037499
+    modified: 1778095746175
+    isPrivate: false
