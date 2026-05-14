@@ -23,15 +23,14 @@ function listar(req, res) {
   }
 }
 
-// CRIAR RECEITA (POST) - Versão Protegida
+// CRIAR RECEITA (POST) - Versão Protegida e Limpa
 async function criar(req, res) {
   try {
     let { nome, ingredientes, link, imagem } = req.body;
 
-    // Se temos um link, vamos tentar extrair
+    // Aciona a extração se receber o texto exato do Front-End
     if (link && ingredientes === "Extraindo ingredientes do vídeo...") {
       
-      // Garante que o link tem http:// ou https://
       if (!link.startsWith('http')) {
         link = 'https://' + link;
       }
@@ -41,8 +40,10 @@ async function criar(req, res) {
           nome = "Receita do YouTube";
           ingredientes = "Assista ao vídeo para ver as medidas exatas.";
         } else {
-          // Tenta ler o site
-          const resposta = await axios.get(link);
+          // O User-Agent ajuda a evitar que sites bloqueiem a nossa extração
+          const resposta = await axios.get(link, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+          });
           const $ = cheerio.load(resposta.data);
 
           const title = $('title').text().trim();
@@ -51,7 +52,8 @@ async function criar(req, res) {
           let extracao = [];
           $('li, .ingredient, p').each((i, el) => {
             const texto = $(el).text().trim();
-            if (texto.length > 3 && texto.length < 80 && (texto.includes('g') || texto.includes('xícara') || texto.includes('colher') || texto.match(/\d/))) {
+            // Lógica para detectar ingredientes
+            if (texto.length > 3 && texto.length < 150 && (texto.includes('g') || texto.includes('xícara') || texto.includes('colher') || texto.match(/\d/))) {
               extracao.push(texto);
             }
           });
@@ -59,16 +61,16 @@ async function criar(req, res) {
           if (extracao.length > 0) {
             ingredientes = [...new Set(extracao)].join(', ');
           } else {
-            ingredientes = "Site lido, mas ingredientes não encontrados.";
+            ingredientes = "Site lido com sucesso, mas os ingredientes não foram encontrados na página.";
           }
         }
       } catch (err) {
-        console.error("Aviso: O link falhou ou bloqueou a leitura:", err.message);
-        ingredientes = "Não foi possível ler este site automaticamente.";
+        console.error("Bloqueio de site ou link inválido:", err.message);
+        ingredientes = "Não foi possível ler este site (link inválido ou bloqueio de segurança do site).";
       }
     }
 
-    // Guardar no Ficheiro JSON
+    // Lê o ficheiro e guarda a nova receita
     const data = fs.readFileSync(caminho, "utf-8");
     let receitas = JSON.parse(data);
 
@@ -85,7 +87,7 @@ async function criar(req, res) {
 
     res.status(201).json(novaReceita);
   } catch (error) {
-    console.error("ERRO CRÍTICO NO BACKEND:", error);
+    console.error("Erro crítico no servidor:", error);
     res.status(500).json({ mensagem: "Erro ao criar receita" });
   }
 }
