@@ -1,22 +1,12 @@
 [
   {
     "id": 1,
-    "username": "Diogo",
-    "password": "$2b$10$FKP.rjPZ785I/uQF3peE7eM.psCki3zaJjMPDIjYf4ZN6Jll4IbdK"
+    "username": "diogo_novo_nome",
+    "password": "$2b$10$fnFrqK0qYum2KJtSXeAnZOQ2k6gjajFsa.0jfmpnApJjKO4j2aJb."
   },
   {
     "id": 2,
-    "username": "luis",
-    "password": "$2b$10$xPiV0a8ie4ZmcA26ftmiFOzRjd1V9uKz5nRup/qFZdiIpk/orOstu"
-  },
-  {
-    "id": 3,
-    "username": "bot1",
-    "password": "$2b$10$he3LseU0.qfpmwM4uueSTus.mpIprnoFi46oet3OAMT5ujcR3M4vy"
-  },
-  {
-    "id": 4,
-    "username": "usuario",
-    "password": "$2b$10$V1Q1JK5XU9FHMI77ez9m7.zXAgaCanG4t72V.uJqD42OJfcWDOEWa"
+    "username": "Diogo",
+    "password": "$2b$10$rfQFANeC4heks0ZsnIAdJeyfO3ZdTTIbk0gsp1IQ17hbK3RyVc6TG"
   }
 ]

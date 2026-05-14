@@ -196,4 +196,21 @@ function logout(req, res) {
   res.send("Logout realizado");
 }
 
+const fs = require('fs');
+const caminhoUsuarios = './Backend/Data/users.json';
+
+// Função para listar todos os usuários
+function listar(req, res) {
+    try {
+        const data = fs.readFileSync(caminhoUsuarios, "utf-8");
+        const usuarios = JSON.parse(data);
+        
+        // Retorna a lista sem as senhas por segurança
+        const listaSegura = usuarios.map(u => ({ id: u.id, username: u.username }));
+        res.status(200).json(listaSegura);
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro ao listar usuários" });
+    }
+}
+
 module.exports = { login, register, refresh, logout };
