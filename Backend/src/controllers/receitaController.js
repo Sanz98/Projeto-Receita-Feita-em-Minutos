@@ -2,7 +2,6 @@ const fs = require("fs");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-// Caminho corrigido com D maiúsculo
 const caminho = "./Data/receitas.json";
 
 // LER RECEITAS (GET)
@@ -23,7 +22,7 @@ function listar(req, res) {
   }
 }
 
-// CRIAR RECEITA (POST) - Versão Protegida e Limpa
+// CRIAR RECEITA (POST)
 async function criar(req, res) {
   try {
     let { nome, ingredientes, link, imagem } = req.body;
@@ -49,10 +48,22 @@ async function criar(req, res) {
           const title = $('title').text().trim();
           if (title) nome = title.replace(/ Receita | TudoGostoso/g, '');
 
+          // ==========================================
+          // NOVO: EXTRAÇÃO DA IMAGEM PELO CHEERIO
+          // ==========================================
+          const imgExtraida = $('meta[property="og:image"]').attr('content') || 
+                              $('meta[name="twitter:image"]').attr('content') || 
+                              $('img').first().attr('src');
+          
+          if (imgExtraida) {
+             // Garante que o link da imagem é válido
+             imagem = imgExtraida.startsWith('http') ? imgExtraida : new URL(imgExtraida, link).href;
+          }
+          // ==========================================
+
           let extracao = [];
           $('li, .ingredient, p').each((i, el) => {
             const texto = $(el).text().trim();
-            // Lógica para detectar ingredientes
             if (texto.length > 3 && texto.length < 150 && (texto.includes('g') || texto.includes('xícara') || texto.includes('colher') || texto.match(/\d/))) {
               extracao.push(texto);
             }
@@ -70,7 +81,6 @@ async function criar(req, res) {
       }
     }
 
-    // Lê o ficheiro e guarda a nova receita
     const data = fs.readFileSync(caminho, "utf-8");
     let receitas = JSON.parse(data);
 
@@ -129,5 +139,4 @@ function deletar(req, res) {
   }
 }
 
-// Exportar tudo corretamente!
 module.exports = { listar, criar, atualizar, deletar };

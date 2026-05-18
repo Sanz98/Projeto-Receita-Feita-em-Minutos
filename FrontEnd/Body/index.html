@@ -4,8 +4,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feito em Minutos</title>
-  <link rel="stylesheet" href="Style/styles.css">
+  <title>Feito em Minutos | Receitas</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root { --bg-dark: #121214; --card-dark: #202024; --primary-food: #FF6B00; --primary-hover: #E55C00; --text-light: #F8F8F2; --text-muted: #A1A1AA; --border-color: #323238; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-light); padding-bottom: 50px; }
+    .top-header { padding: 20px 5%; display: flex; align-items: center; background: var(--bg-dark); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+    .logo-container { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { background: linear-gradient(135deg, var(--primary-food), #FF9500); padding: 8px; border-radius: 12px; color: white; display: flex; box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3); }
+    .logo-icon svg { width: 28px; height: 28px; }
+    h1 { font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; }
+    .menu { padding: 20px 5%; overflow-x: auto; white-space: nowrap; }
+    .menu-container { display: flex; gap: 12px; }
+    .menu-container button { background: var(--card-dark); color: var(--text-muted); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 50px; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; }
+    .menu-container button:hover { border-color: var(--primary-food); color: var(--text-light); }
+    .menu-container button.active { background: var(--primary-food); color: white; border-color: var(--primary-food); box-shadow: 0 4px 12px rgba(255, 107, 0, 0.4); }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+    .hero-card { position: relative; border-radius: 24px; overflow: hidden; margin-top: 10px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
+    .hero-image img { width: 100%; height: 350px; object-fit: cover; display: block; }
+    .hero-gradient { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-dark) 10%, rgba(18, 18, 20, 0.8) 50%, rgba(18, 18, 20, 0.3)); }
+    .hero-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 40px; z-index: 10; }
+    .text-center { text-align: center; }
+    .hero-content h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); line-height: 1.2; }
+    .hero-content .subtitle { color: #D4D4D8; font-size: 1rem; margin-bottom: 25px; font-weight: 300; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .form { background: rgba(32, 32, 36, 0.85); backdrop-filter: blur(10px); padding: 8px; border-radius: 999px; display: flex; align-items: center; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 600px; margin: 0 auto; }
+    input[type="url"], input[type="text"], textarea { flex: 1; background: transparent; border: none; padding: 15px 20px; color: white; font-size: 0.95rem; outline: none; font-family: inherit; width: 100%; }
+    input::placeholder { color: #71717A; }
+    .btn-primary { background: var(--primary-food) !important; color: white !important; border: none !important; padding: 14px 28px !important; border-radius: 50px !important; font-weight: 600 !important; cursor: pointer; transition: all 0.3s ease !important; font-family: 'Poppins', sans-serif !important; }
+    .btn-primary:hover { background: var(--primary-hover) !important; transform: scale(1.05) !important; box-shadow: 0 8px 20px rgba(255, 107, 0, 0.4) !important; }
+    .btn-secondary { background: var(--card-dark) !important; color: var(--text-light) !important; border: 1px solid var(--border-color) !important; padding: 14px 28px !important; border-radius: 50px !important; font-weight: 600 !important; cursor: pointer; transition: 0.3s !important; }
+    .btn-secondary:hover { background: #323238 !important; }
+    .historico-card { background: var(--card-dark) !important; border: 1px solid var(--border-color) !important; border-radius: 20px !important; padding: 20px !important; transition: all 0.3s ease !important; }
+    .historico-card:hover { transform: translateY(-4px) !important; box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important; border-color: #3F3F46 !important; }
+    .historico-card h3 { font-family: 'Poppins', sans-serif !important; font-size: 1.1rem !important; margin-bottom: 4px !important; }
+    .historico-card img { border-radius: 12px !important; width: 80px !important; height: 80px !important; }
+    .h-icon-btn { background: #2A2A30 !important; border-radius: 50% !important; width: 42px !important; height: 42px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; transition: 0.3s !important; border: none !important; cursor: pointer !important; color: var(--text-muted) !important; }
+    .h-icon-btn:hover { background: #3F3F46 !important; color: white !important; transform: scale(1.1) !important; }
+    .checkbox-label { background: var(--card-dark) !important; border: 1px solid var(--border-color) !important; border-radius: 12px !important; transition: 0.3s !important; }
+    .checkbox-label:hover { border-color: #52525B !important; }
+  </style>
 </head>
 
 <body>
@@ -13,9 +53,7 @@
   <header class="top-header">
     <div class="logo-container">
       <div class="logo-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-        </svg>
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
       </div>
       <h1>Feito em Minutos</h1>
     </div>
@@ -25,12 +63,13 @@
     <div class="menu-container">
       <button class="active" onclick="navegar('home', this)">Início</button>
       <button onclick="navegar('ingredientes', this)">Ingredientes</button>
-      <button onclick="navegar('compras', this)">Compras</button>
-      <button onclick="navegar('pedidos', this)">Pedidos (Shopper)</button>
-      <button onclick="navegar('historico', this)">Histórico</button>
-      <button onclick="navegar('avaliacao', this)">Avaliação</button>
-      <button onclick="navegar('confirmacao', this)">Confirmação</button>
-      <button onclick="sair()" style="color: #ef4444;">Sair</button>
+      <button onclick="navegar('compras', this)">Lista de Compras</button>
+      <button onclick="navegar('pedidos', this)">Shopper (Delivery)</button>
+      <button onclick="navegar('historico', this)">Meu Histórico</button>
+      <button onclick="navegar('avaliacao', this)">Avaliar</button>
+      <button onclick="navegar('perfil', this)">Meu Perfil</button>
+      <button onclick="navegar('confirmacao', this)" style="display: none;">Confirmação</button>
+      <button onclick="sair()" style="color: #ef4444; margin-left: auto;">Sair</button>
     </div>
   </nav>
 
@@ -39,177 +78,210 @@
     <section id="home" class="pagina">
       <div class="hero-card">
         <div class="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1775871104536-698d830fea10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXJrJTIwa2l0Y2hlbiUyMGNvb2tpbmd8ZW58MXx8fHwxNzc3OTI0MTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Cozinha">
+          <img src="https://images.unsplash.com/photo-1551183053-bf91a1d81141?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80" alt="Cozinha">
           <div class="hero-gradient"></div>
         </div>
         <div class="hero-content text-center">
-          <h2>Transforme vídeos em receitas</h2>
-          <p class="subtitle">Cole o link de um vídeo de receita ou digite manualmente para extrair os ingredientes.</p>
+          <h2>Vídeos viram Receitas</h2>
+          <p class="subtitle">Cole o link do YouTube, TikTok ou site e nós extraímos tudo para você.</p>
+          
+          <div style="position: relative; margin-top: 10px; margin-bottom: 20px;">
+            <img id="previewReceita" src="" alt="Preview da Receita" style="display: none; width: 100%; height: 180px; object-fit: cover; border-radius: 16px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 2px solid var(--border-color);" />
+          </div>
+
           <div class="form">
-            <!-- 1. Nome da receita -->
-            <div class="form">
-              <input type="text" id="input-nome" placeholder="Nome da receita (Opcional)">
-
-              <input type="url" id="input-link" placeholder="Cole o link do YouTube ou qualquer outro">
-
-              <input type="text" id="input-ingredientes" placeholder="Ingredientes (Opcional)">
-
-              <button class="btn-primary" onclick="criarReceita()">Salvar receita</button>
-            </div>
+            <input type="url" id="input-link" placeholder="Cole o link da receita aqui..." oninput="mostrarPreview()">
+            <button class="btn-primary" onclick="criarReceita()" style="margin: 4px;">Extrair</button>
           </div>
         </div>
       </div>
-      <div id="lista" class="grid-lista"></div>
+      
+      <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-weight: 700; font-size: 1.2rem;">Suas Receitas</h3>
+        <button class="btn-secondary" onclick="abrirModalAdicionar()" style="padding: 8px 16px !important; font-size: 0.85rem !important;">+ Nova Receita</button>
+      </div>
+      <div id="lista" class="grid-lista" style="margin-top: 15px;"></div>
     </section>
 
-    <!-- AGORA ESSE É O ÚNICO "ingredientes" DA PÁGINA -->
     <section id="ingredientes" class="pagina" style="display: none;">
       <div class="hero-card">
         <div class="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1760537831506-f2209c4b5ad6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmcmVzaCUyMGluZ3JlZGllbnRzJTIwdmVnZXRhYmxlcyUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Ingredientes">
+          <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80" alt="Ingredientes">
           <div class="hero-gradient"></div>
         </div>
         <div class="hero-content">
-          <h2 id="titulo-ingredientes">Ingredientes da receita</h2>
-          <div id="lista-ingredientes" class="grid-lista" style="margin-top: 15px;">
-            <p class="empty-text">Nenhuma receita selecionada. Vá ao Início e clique no ícone do olho na receita.</p>
-          </div>
-          <div class="utensilios-box">
-            <h3>Utensílios necessários</h3>
-            <ul>
-              <li><span>•</span> Panela média ou frigideira</li>
-              <li><span>•</span> Faca e Tábua de corte</li>
-            </ul>
-          </div>
-          <div class="action-buttons mt-24">
-            <button class="btn-secondary"
-              onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar</button>
-            <button class="btn-primary shadow-lg"
-              onclick="navegar('compras', document.querySelectorAll('.menu button')[2])">Continuar</button>
-          </div>
+          <h2 id="titulo-ingredientes">Ingredientes da Receita</h2>
+          <p class="subtitle" style="margin-bottom: 10px;">O que você já tem na geladeira? Marque os itens abaixo.</p>
         </div>
+      </div>
+      
+      <div id="lista-ingredientes" class="grid-lista" style="margin-top: 20px;">
+        <p class="empty-text">Nenhuma receita selecionada. Volte e escolha uma receita.</p>
+      </div>
+      <div style="display: flex; gap: 15px; margin-top: 30px; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar</button>
+        <button class="btn-primary" onclick="navegar('compras', document.querySelectorAll('.menu button')[2])">Comprar Faltantes</button>
       </div>
     </section>
 
     <section id="compras" class="pagina" style="display: none;">
       <div class="hero-card">
         <div class="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1661313647610-de652aca54c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncm9jZXJ5JTIwc2hvcHBpbmclMjBwYXBlciUyMGJhZyUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Compras">
+          <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80" alt="Compras">
           <div class="hero-gradient"></div>
         </div>
         <div class="hero-content">
-          <h2>Lista de compras</h2>
-          <div class="compras-lista" id="itens-compras">
-            <div class="compra-item"><span>Arroz</span><span class="badge">1kg</span></div>
-            <div class="compra-item"><span>Tomate</span><span class="badge">2 unidades</span></div>
-          </div>
-          <button class="btn-dashed mt-24"><span class="plus-icon">+</span> Adicionar item manual</button>
-          <div class="total-box">
-            <button class="btn-primary shadow-lg"
-              onclick="navegar('pedidos', document.querySelectorAll('.menu button')[3])">Confirmar pedido</button>
-          </div>
+          <h2>Seu Carrinho</h2>
+          <p class="subtitle" style="margin-bottom: 0;">Itens que faltam para a sua receita perfeita.</p>
         </div>
+      </div>
+      
+      <div id="lista-compras-itens" style="margin-top: 20px; color: #a3a3a3;"></div>
+      <div style="margin-top: 20px; text-align: right;">
+        <button class="btn-primary" style="width: 100%; padding: 18px !important; font-size: 1.1rem !important;">Confirmar Pedido no Shopper</button>
       </div>
     </section>
 
     <section id="pedidos" class="pagina" style="display: none;">
       <div class="hero-card">
         <div class="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1761499468846-695fc79d2950?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwZGVsaXZlcnklMjByaWRlciUyMHVyYmFuJTIwZGFya3xlbnwxfHx8fDE3Nzc5MjQxNDd8MA&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Shopper">
+          <img src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80" alt="Shopper">
           <div class="hero-gradient"></div>
         </div>
         <div class="hero-content">
-          <h2 style="margin-bottom: 24px;">Pedidos disponíveis</h2>
-          <div class="grid-lista">
-            <div class="shopper-card">
-              <div class="shopper-header">
-                <h3>Pedido #1234</h3><span class="badge time">~15 min</span>
-              </div>
-              <ul class="shopper-items">
-                <li>Arroz (1kg)</li>
-                <li>Tomate (2 un)</li>
-              </ul>
-              <div class="shopper-footer">
-                <span class="location">Centro - 2.5km</span>
-                <button class="btn-primary sm-btn"
-                  onclick="navegar('confirmacao', document.querySelectorAll('.menu button')[6])">Aceitar</button>
-              </div>
-            </div>
-          </div>
+          <h2>Rastreio do Shopper</h2>
+          <p class="subtitle" style="margin-bottom: 0;">Acompanhe a chegada dos seus ingredientes em tempo real.</p>
         </div>
       </div>
+      <div id="lista-pedidos-shopper" class="grid-lista" style="margin-top: 20px;"></div>
     </section>
 
     <section id="historico" class="pagina" style="display: none;">
       <div class="hero-card">
         <div class="hero-image">
-          <img
-            src="https://images.unsplash.com/photo-1597968203824-49876d917f75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWNpcGUlMjBib29rJTIwdmludGFnZSUyMGRhcmt8ZW58MXx8fHwxNzc3OTI0MTQ3fDA&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Histórico">
+          <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80" alt="Histórico">
           <div class="hero-gradient"></div>
         </div>
         <div class="hero-content">
-          <h2>Histórico de Receitas</h2>
-          <div id="lista-historico" class="grid-lista" style="margin-bottom: 24px;"></div>
+          <h2>Seu Acervo</h2>
+          <p class="subtitle" style="margin-bottom: 0;">Todas as receitas que você já salvou na plataforma.</p>
+        </div>
+      </div>
+      <div id="lista-historico" class="grid-lista" style="margin-top: 20px;"></div>
+    </section>
+
+    <section id="avaliacao" class="pagina" style="display: none;">
+      <div class="hero-card" style="margin-top: 40px;">
+        <div class="hero-content text-center" style="position: relative; background: var(--card-dark); border-radius: 24px; padding: 50px;">
+          <h2 style="font-size: 1.8rem; margin-bottom: 10px;">Gostou da experiência?</h2>
+          <p class="subtitle" style="color: var(--text-muted);">Sua avaliação nos ajuda a melhorar a inteligência de extração.</p>
+          
+          <div id="star-container" style="display: flex; justify-content: center; gap: 15px; margin: 20px 0; font-size: 2.5rem; color: var(--border-color); cursor: pointer;">
+            <span class="star" data-value="1" onclick="selecionarNota(1)" onmouseover="hoverEstrela(1)" onmouseout="resetEstrelas()">★</span>
+            <span class="star" data-value="2" onclick="selecionarNota(2)" onmouseover="hoverEstrela(2)" onmouseout="resetEstrelas()">★</span>
+            <span class="star" data-value="3" onclick="selecionarNota(3)" onmouseover="hoverEstrela(3)" onmouseout="resetEstrelas()">★</span>
+            <span class="star" data-value="4" onclick="selecionarNota(4)" onmouseover="hoverEstrela(4)" onmouseout="resetEstrelas()">★</span>
+            <span class="star" data-value="5" onclick="selecionarNota(5)" onmouseover="hoverEstrela(5)" onmouseout="resetEstrelas()">★</span>
+          </div>
+
+          <textarea id="comentario-avaliacao" placeholder="Deixe um comentário sobre o app (opcional)..." rows="3" style="width: 100%; max-width: 450px; padding: 15px; border-radius: 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; margin-bottom: 20px; resize: none;"></textarea>
+          
+          <br>
+          <button class="btn-primary" onclick="enviarAvaliacao()">Enviar Feedback</button>
         </div>
       </div>
     </section>
 
-    <section id="avaliacao" class="pagina" style="display: none;">
-      <div class="hero-card" style="padding-top: 32px;">
-        <div class="hero-content">
-          <h2 style="font-size: 1.5rem; text-align: left; margin-bottom: 32px;">Avaliar entrega</h2>
-          <div class="form">
-            <p style="text-align: center;">Como foi a experiência do pedido <span
-                style="color:#f5f5f5; font-weight:bold;">#1237</span>?</p>
-            <div class="rating-box">
-              <span class="star">★</span><span class="star">★</span><span class="star">★</span><span
-                class="star">★</span><span class="star">★</span>
-            </div>
-            <textarea placeholder="Comentário (opcional)..." class="custom-textarea"></textarea>
-            <button class="btn-primary" style="margin-top: 16px;">Enviar avaliação</button>
+    <section id="perfil" class="pagina" style="display: none;">
+      <div class="hero-card" style="margin-top: 40px;">
+        <div class="hero-content text-center" style="position: relative; background: var(--card-dark); border-radius: 24px; padding: 50px;">
+          
+          <div style="background: rgba(255, 107, 0, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; border: 2px solid var(--primary-food);">
+            <svg style="width: 40px; height: 40px; color: var(--primary-food);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
           </div>
+          <h2 style="font-size: 2rem;">Olá, <span id="perfil-username" style="color: var(--primary-food);">Usuário</span>!</h2>
+          <p class="subtitle" style="color: var(--text-muted); margin-bottom: 30px;">Gerencie suas configurações e dados pessoais.</p>
+
+          <div style="background: var(--bg-dark); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; max-width: 450px; margin: 0 auto 30px auto;">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Alterar Senha</h3>
+            <input type="password" id="senha-atual" placeholder="Senha atual" style="width: 100%; padding: 12px; margin-bottom: 12px; background: var(--card-dark); border: 1px solid var(--border-color); color: white; border-radius: 8px;">
+            <input type="password" id="nova-senha" placeholder="Nova senha (mín. 6 caracteres)" style="width: 100%; padding: 12px; margin-bottom: 15px; background: var(--card-dark); border: 1px solid var(--border-color); color: white; border-radius: 8px;">
+            <button class="btn-primary" style="width: 100%;" onclick="alterarSenha()">Atualizar Senha</button>
+          </div>
+
+          <div style="background: rgba(239, 68, 68, 0.05); padding: 25px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.2); text-align: left; max-width: 450px; margin: 0 auto;">
+            <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: #ef4444;">Zona de Perigo</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Ao excluir sua conta, todas as suas receitas e avaliações serão apagadas permanentemente. Esta ação não pode ser desfeita.</p>
+            <button class="btn-secondary" style="width: 100%; border-color: #ef4444; color: #ef4444;" onclick="excluirConta()">Excluir Minha Conta</button>
+          </div>
+
         </div>
       </div>
     </section>
 
     <section id="confirmacao" class="pagina" style="display: none;">
-      <div class="hero-card">
-        <div class="hero-image" style="height: 224px;">
-          <img
-            src="https://images.unsplash.com/photo-1547478267-54ce493dd7d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBoZWFsdGh5JTIwZGlubmVyJTIwZGFyayUyMHBsYXRlfGVufDF8fHx8MTc3NzkyNDE0N3ww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Confirmação">
-          <div class="hero-gradient"
-            style="background: linear-gradient(to top, var(--bg-header) 20%, rgba(23,23,23,0.6), transparent);"></div>
-        </div>
-        <div class="hero-content text-center pt-8">
-          <h2>Pedido confirmado!</h2>
-          <p>Sua lista está sendo preparada.</p>
-          <div class="confirm-box">
-            <div class="confirm-row"><span>Número do pedido</span><strong>#1237</strong></div>
-            <div class="confirm-row no-border"><span>Tempo estimado</span><strong style="color: #10b981;">30-40
-                min</strong></div>
+      <div class="hero-card" style="margin-top: 40px;">
+        <div class="hero-content text-center" style="position: relative; background: var(--card-dark); border-radius: 24px; padding: 50px;">
+          <div style="background: rgba(255, 107, 0, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; border: 2px solid var(--primary-food);">
+            <svg style="width: 40px; height: 40px; color: var(--primary-food);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
           </div>
-          <div class="form-buttons mt-24" style="display:flex; flex-direction:column; gap:16px;">
-            <button class="btn-primary shadow-lg w-full"
-              onclick="navegar('avaliacao', document.querySelectorAll('.menu button')[5])">Acompanhar pedido</button>
-            <button class="btn-secondary w-full"
-              onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Nova receita</button>
-          </div>
+          <h2 style="font-size: 2rem;">Ação Concluída!</h2>
+          <p class="subtitle" style="color: var(--text-muted); margin-bottom: 30px;">Tudo certo com o processamento do seu pedido.</p>
+          <button class="btn-secondary" onclick="navegar('home', document.querySelectorAll('.menu button')[0])">Voltar ao Painel</button>
         </div>
       </div>
     </section>
 
   </main>
+
+  <div id="modal-editar" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(9, 9, 11, 0.85); align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background-color: var(--card-dark); padding: 30px; border-radius: 24px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      <h3 style="margin-bottom: 20px; color: white; font-size: 1.4rem; font-weight: 700;">Editar Receita</h3>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Nome do Prato</label>
+          <input type="text" id="edit-nome" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px;">
+        </div>
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Link de Origem</label>
+          <input type="text" id="edit-link" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px;">
+        </div>
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Lista de Ingredientes</label>
+          <textarea id="edit-ingredientes" rows="4" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px; resize: vertical Haus;"></textarea>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px;">
+        <button class="btn-secondary" onclick="fecharModalEditar()">Cancelar</button>
+        <button class="btn-primary" id="btn-salvar-edicao">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-adicionar" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(9, 9, 11, 0.85); align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background-color: var(--card-dark); padding: 30px; border-radius: 24px; border: 1px solid var(--border-color); width: 90%; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      <h3 style="margin-bottom: 20px; color: white; font-size: 1.4rem; font-weight: 700;">Nova Receita Manual</h3>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Nome do Prato *</label>
+          <input type="text" id="add-nome" placeholder="Ex: Bolo de Cenoura" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; border-radius: 12px;">
+        </div>
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Ingredientes * (separados por vírgula)</label>
+          <textarea id="add-ingredientes" rows="4" placeholder="Ex: 3 cenouras, 4 ovos, farinha..." style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; border-radius: 12px; resize: vertical;"></textarea>
+        </div>
+        <div>
+          <label style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">URL da Imagem (Opcional)</label>
+          <input type="text" id="add-imagem" placeholder="Cole o link de uma foto do prato" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; border-radius: 12px;">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px;">
+        <button class="btn-secondary" onclick="fecharModalAdicionar()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarReceitaManual()">Criar Receita</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
-
 </html>

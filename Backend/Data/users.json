@@ -1,12 +1,7 @@
 [
   {
-    "id": 1,
-    "username": "diogo_novo_nome",
-    "password": "$2b$10$fnFrqK0qYum2KJtSXeAnZOQ2k6gjajFsa.0jfmpnApJjKO4j2aJb."
-  },
-  {
-    "id": 2,
+    "id": "1",
     "username": "Diogo",
-    "password": "$2b$10$rfQFANeC4heks0ZsnIAdJeyfO3ZdTTIbk0gsp1IQ17hbK3RyVc6TG"
+    "password": "$2b$10$9zYZ6wVlY9Us3sSxdWmnUuyvxuQAD2WxT8zHGEmE19A0HaU.L2SFm"
   }
 ]

@@ -7,6 +7,34 @@ meta:
   modified: 1778730547034
   description: ""
 collection:
+  - url: http://localhost:3000/users/login
+    name: Login
+    meta:
+      id: req_f3e56a6193894e8f8059f9b3d80d32e3
+      created: 1778773121259
+      modified: 1778789855204
+      isPrivate: false
+      description: ""
+      sortKey: -1778773121259
+    method: POST
+    body:
+      mimeType: application/json
+      text: ""
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
   - name: CRUD Receitas
     meta:
       id: fld_894bb8f36520430fa55572a1d3d8a478
@@ -61,16 +89,58 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: ""
+      - url: http://localhost:3000/receitas
         name: Criar Receita
         meta:
           id: req_26509ca0c5b847859775e8a7d718a7b3
           created: 1778730591966
-          modified: 1778730613821
+          modified: 1778786310637
           isPrivate: false
           description: ""
           sortKey: -1778095813386
         method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nome": "Panqueca de Frango",
+              "ingredientes": "Extraindo ingredientes do vídeo...",
+              "link": "https://youtu.be/qbd4_ETAENU?si=BB_gBFWC3XrmI8YN",
+              "imagem": "https://img.youtube.com/vi/qbd4_ETAENU/hqdefault.jpg"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+          - name: New Name
+            value: Authorization
+            description: ""
+            disabled: false
+          - name: New Value
+            value: Bearer seu_token_aqui
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: ""
+        name: "Atualizar Receita "
+        meta:
+          id: req_ba4b699fddc04c229fe39c2f3fdc3eae
+          created: 1778776156031
+          modified: 1778776214251
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813686
+        method: PUT
         headers:
           - name: User-Agent
             value: insomnia/12.5.0
@@ -92,12 +162,12 @@ collection:
       sortKey: -1778095788895
       description: ""
     children:
-      - url: ""
+      - url: http://localhost:3000/users
         name: Listar Usuario
         meta:
           id: req_325a146f537b4644a1953582fe0735a7
           created: 1778176400921
-          modified: 1778730581105
+          modified: 1778775351293
           isPrivate: false
           description: ""
           sortKey: -1778176400921
@@ -115,17 +185,26 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: ""
+      - url: http://localhost:3000/users/register
         name: Criar Usuário
         meta:
           id: req_147848e415e64867b1f9f1730e8bfcf6
           created: 1778176426594
-          modified: 1778730571901
+          modified: 1778786692911
           isPrivate: false
           description: ""
           sortKey: -1778176401021
         method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            "username": "diogo",
+            "password": "senha123"
+            }
         headers:
+          - name: Content-Type
+            value: application/json
           - name: User-Agent
             value: insomnia/12.5.0
             description: ""
@@ -138,12 +217,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: ""
+      - url: http://localhost:3000/users/
         name: Deletar Usuário
         meta:
           id: req_8c5a2f1917c64ef4966b4b180b53e2f9
           created: 1778176456579
-          modified: 1778730575781
+          modified: 1778790467819
           isPrivate: false
           description: ""
           sortKey: -1778176401121
@@ -153,6 +232,10 @@ collection:
             value: insomnia/12.5.0
             description: ""
             disabled: false
+        authentication:
+          type: bearer
+          disabled: false
+          token: jwt-fake
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -161,6 +244,45 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: http://localhost:3000/users/1
+        name: Atualizar Usuário
+        meta:
+          id: req_09970f7d24054e45a05b1d28de2aa4ac
+          created: 1778775823294
+          modified: 1778775973917
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400971
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "username": "diogo_novo_nome",
+              "password": "nova_senha_super_segura"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Login
+    meta:
+      id: fld_6e2e9e4e755e421891d636c9bc1ed97e
+      created: 1778773171784
+      modified: 1778773171784
+      sortKey: -1778773171784
+      description: ""
 cookieJar:
   name: Default Jar
   meta:

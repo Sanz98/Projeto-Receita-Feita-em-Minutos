@@ -1,5 +1,2 @@
 node_modules/
 .env
-Insomnia_2026-05-14.yaml
-#  ignorar todos os arquivos YAML exportados:
-*.yaml

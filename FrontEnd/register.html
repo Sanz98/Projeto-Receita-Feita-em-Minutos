@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Feito em Minutos</title>
+  <title>Cadastrar | Feito em Minutos</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
@@ -22,10 +22,12 @@
     .input-group input:focus { border-color: var(--primary-food); box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2); }
     .btn-primary { background: var(--primary-food); color: white; border: none; padding: 16px; border-radius: 50px; font-weight: 600; font-size: 1rem; width: 100%; cursor: pointer; transition: 0.3s; margin-top: 10px; }
     .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 107, 0, 0.4); }
-    .register-link { display: block; margin-top: 25px; color: var(--text-muted); font-size: 0.9rem; text-decoration: none; transition: 0.3s; }
-    .register-link span { color: var(--primary-food); font-weight: 600; }
-    .register-link:hover span { color: var(--primary-hover); text-decoration: underline; }
-    #msg-erro { display: none; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; padding: 12px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .login-link { display: block; margin-top: 25px; color: var(--text-muted); font-size: 0.9rem; text-decoration: none; transition: 0.3s; }
+    .login-link span { color: var(--primary-food); font-weight: 600; }
+    .login-link:hover span { color: var(--primary-hover); text-decoration: underline; }
+    #msg-erro, #msg-sucesso { display: none; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; padding: 12px; border-radius: 12px; }
+    #msg-erro { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    #msg-sucesso { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
   </style>
 </head>
 
@@ -33,31 +35,32 @@
 
   <div class="auth-container">
     <div class="logo-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
     </div>
     
-    <h2>Bem-vindo de volta!</h2>
-    <p class="subtitle">Faça login para acessar suas receitas.</p>
+    <h2>Criar Conta</h2>
+    <p class="subtitle">Guarde seu acervo de receitas na nuvem.</p>
 
-    <div id="msg-erro">Usuário ou senha incorretos!</div>
+    <div id="msg-erro"></div>
+    <div id="msg-sucesso"></div>
 
-    <form onsubmit="fazerLogin(event)">
+    <form onsubmit="registrarUsuario(event)">
       <div class="input-group">
-        <label for="username">Nome de Usuário</label>
-        <input type="text" id="username" placeholder="Seu usuário" required>
+        <label for="reg-username">Nome de Usuário</label>
+        <input type="text" id="reg-username" placeholder="Ex: chef_mario" required>
       </div>
       
       <div class="input-group">
-        <label for="password">Senha</label>
-        <input type="password" id="password" placeholder="Sua senha" required>
+        <label for="reg-password">Senha</label>
+        <input type="password" id="reg-password" placeholder="Mínimo de 6 caracteres" required>
       </div>
 
-      <button type="submit" class="btn-primary">Entrar na plataforma</button>
+      <button type="submit" class="btn-primary">Concluir Cadastro</button>
     </form>
 
-    <a href="register.html" class="register-link">Ainda não tem conta? <span>Cadastre-se aqui</span></a>
+    <a href="login.html" class="login-link">Já tem uma conta? <span>Entre aqui</span></a>
   </div>
 
-  <script src="login.js"></script>
+  <script src="register.js"></script>
 </body>
 </html>
