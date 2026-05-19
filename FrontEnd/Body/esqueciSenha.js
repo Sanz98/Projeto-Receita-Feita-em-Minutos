@@ -5,11 +5,20 @@ document.getElementById('form-esqueci').addEventListener('submit', async (e) => 
     const textoOriginal = btn.innerText;
     
     // Efeito de carregamento para melhor experiência
-    btn.innerText = "Verificando...";
+    btn.innerText = "A verificar...";
     btn.disabled = true;
 
+    // 🧠 Lógica Inteligente para o ngrok e localhost
+    let baseUrl = '';
+    const host = window.location.hostname;
+    if (host === '127.0.0.1' || host === 'localhost' || window.location.protocol === 'file:') {
+        if(window.location.port !== '3000') {
+            baseUrl = 'http://localhost:3000';
+        }
+    }
+
     try {
-        const response = await fetch('http://localhost:3000/users/esqueci-senha', {
+        const response = await fetch(`${baseUrl}/users/esqueci-senha`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username })
@@ -18,28 +27,28 @@ document.getElementById('form-esqueci').addEventListener('submit', async (e) => 
         const data = await response.json();
         
         if (response.ok) {
-            // Se o usuário existir e o link for gerado, atualizamos a interface na hora!
+            // Atualiza a interface para o e-mail simulado
             const container = document.querySelector('.auth-container');
             container.innerHTML = `
                 <h2>E-mail Simulado 📬</h2>
                 <p class="subtitle" style="margin-bottom: 25px;">
-                    Como este é um ambiente acadêmico sem envio real de e-mails, clique no botão abaixo para simular o link de segurança que você receberia na sua caixa de entrada.
+                    Como este é um ambiente académico sem envio real de e-mails, clica no botão abaixo para simular o link de segurança que receberias na tua caixa de entrada.
                 </p>
                 <a href="${data.link}" style="display: block; width: 100%; padding: 14px; background: #10b981; color: #fff; border-radius: 12px; text-decoration: none; font-size: 1rem; font-weight: 600; transition: background 0.3s; text-align: center; box-sizing: border-box;">
-                    🔗 Redefinir Minha Senha
+                    🔗 Redefinir a Minha Palavra-passe
                 </a>
                 <div class="form-footer" style="margin-top: 24px;">
                     <p><a href="login.html" style="color: #FF6B00; text-decoration: none; font-weight: 600;">Voltar para o Login</a></p>
                 </div>
             `;
         } else {
-            alert(data.mensagem || 'Usuário não encontrado no sistema.');
+            alert(data.mensagem || 'Utilizador não encontrado no sistema.');
             btn.innerText = textoOriginal;
             btn.disabled = false;
         }
     } catch (error) {
         console.error('Erro ao solicitar recuperação:', error);
-        alert('Falha na conexão com o servidor.');
+        alert('Falha na ligação com o servidor. O Back-end está a correr?');
         btn.innerText = textoOriginal;
         btn.disabled = false;
     }

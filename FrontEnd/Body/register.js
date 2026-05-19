@@ -21,30 +21,37 @@ async function registrarUsuario(event) {
     return;
   }
 
+  // 🧠 Lógica Inteligente de Rotas
+  let baseUrl = '';
+  const host = window.location.hostname;
+  if (host === '127.0.0.1' || host === 'localhost' || window.location.protocol === 'file:') {
+      if(window.location.port !== '3000') {
+          baseUrl = 'http://localhost:3000';
+      }
+  }
+
   try {
-    const resposta = await fetch('http://localhost:3000/users/register', {
+    const resposta = await fetch(`${baseUrl}/users/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true' // Força o ngrok a ignorar o ecrã de aviso
+      },
       body: JSON.stringify({ username: usuarioDigitado, password: senhaDigitada })
     });
 
     const dados = await resposta.json();
 
     if (resposta.status === 201) {
-      msgSucesso.innerText = "Conta criada com sucesso! Redirecionando para o Login...";
-      msgSucesso.style.display = 'block';
-      
-      setTimeout(() => {
-        window.location.href = 'login.html';
-      }, 2000);
-
+      // Redireciona imediatamente sem atrasos
+      window.location.replace('login.html');
     } else {
-      msgErro.innerText = dados.mensagem || "Erro ao criar conta. Tente outro usuário.";
+      msgErro.innerText = dados.mensagem || "Erro ao criar conta.";
       msgErro.style.display = 'block';
     }
   } catch (error) {
-    console.error("Erro na API de registro:", error);
-    msgErro.innerText = "Erro de conexão. Verifique se o Back-end está rodando.";
+    console.error("Erro no registro:", error);
+    msgErro.innerText = "Erro de conexão. O servidor está rodando?";
     msgErro.style.display = 'block';
   }
 }

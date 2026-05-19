@@ -9,7 +9,17 @@ function sair() {
   window.location.href = 'login.html';
 }
 
-const API = "/receitas";
+// 🧠 Lógica Inteligente para o telemóvel (ngrok) e computador (Live Server)
+let baseUrl = '';
+const host = window.location.hostname;
+if (host === '127.0.0.1' || host === 'localhost' || window.location.protocol === 'file:') {
+    if(window.location.port !== '3000') {
+        baseUrl = 'http://localhost:3000';
+    }
+}
+
+// Em vez de localhost, a API vai adaptar-se automaticamente
+const API = `${baseUrl}/receitas`;
 let receitasGlobais = [];
 let itensParaComprarGlobal = []; 
 
@@ -152,8 +162,8 @@ async function criarReceita() {
   btnExtrair.disabled = true;
 
   try {
-    // 1. Faz a chamada HTTP POST para a rota de IA do nosso Back-end seguro
-    const respostaIA = await fetch("http://localhost:3000/receitas/extrair-ia", {
+    // 1. Faz a chamada HTTP POST para a rota de IA usando o baseUrl dinâmico
+    const respostaIA = await fetch(`${baseUrl}/receitas/extrair-ia`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ link: linkOriginal })
@@ -597,7 +607,7 @@ async function enviarAvaliacao() {
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
 
   try {
-    const res = await fetch("http://localhost:3000/avaliacoes", {
+    const res = await fetch(`${baseUrl}/avaliacoes`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -645,11 +655,12 @@ async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
 
-  if (!senhaAtual || !novaSenha) return alert("Preencha a senha atual e a nova senha!");
-  if (novaSenha.length < 6) return alert("A nova senha deve ter pelo menos 6 caracteres.");
+  if (!senhaAtual || !novaSenha) return alert("Preencha a palavra-passe atual e a nova!");
+  if (novaSenha.length < 6) return alert("A nova palavra-passe deve ter pelo menos 6 caracteres.");
 
   try {
-    const res = await fetch("http://localhost:3000/perfil/senha", {
+    // Usar a variável baseUrl em vez do localhost fixo
+    const res = await fetch(`${baseUrl}/perfil/senha`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -666,16 +677,17 @@ async function alterarSenha() {
       document.getElementById("nova-senha").value = "";
     }
   } catch (error) {
-    alert("Erro de conexão com o servidor ao alterar senha.");
+    alert("Erro de ligação com o servidor ao alterar a palavra-passe.");
   }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem a certeza absoluta de que deseja excluir a sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
-    const res = await fetch("http://localhost:3000/perfil", {
+    // Usar a variável baseUrl em vez do localhost fixo
+    const res = await fetch(`${baseUrl}/perfil`, {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });
@@ -689,9 +701,6 @@ async function excluirConta() {
       alert(dados.mensagem || "Erro ao excluir conta.");
     }
   } catch (error) {
-    alert("Erro de conexão com o servidor.");
+    alert("Erro de ligação com o servidor.");
   }
 }
-
-// Inicialização automática
-carregar();

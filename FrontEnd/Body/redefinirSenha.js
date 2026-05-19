@@ -2,7 +2,6 @@ document.getElementById('form-redefinir').addEventListener('submit', async (e) =
     e.preventDefault();
     const novaSenha = document.getElementById('nova-senha').value.trim();
     
-    // Captura os parâmetros contidos na URL gerada pelo servidor
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('username');
     const token = urlParams.get('token');
@@ -12,8 +11,17 @@ document.getElementById('form-redefinir').addEventListener('submit', async (e) =
         return;
     }
 
+    // 🧠 Lógica Inteligente
+    let baseUrl = '';
+    const host = window.location.hostname;
+    if (host === '127.0.0.1' || host === 'localhost' || window.location.protocol === 'file:') {
+        if(window.location.port !== '3000') {
+            baseUrl = 'http://localhost:3000';
+        }
+    }
+
     try {
-        const response = await fetch('http://localhost:3000/users/redefinir-senha', {
+        const response = await fetch(`${baseUrl}/users/redefinir-senha`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, token, novaSenha })
@@ -22,10 +30,10 @@ document.getElementById('form-redefinir').addEventListener('submit', async (e) =
         const data = await response.json();
 
         if (response.ok) {
-            alert('Senha alterada com sucesso! Já podes fazer login.');
+            alert('Palavra-passe alterada com sucesso! Já pode iniciar sessão.');
             window.location.href = 'login.html';
         } else {
-            alert(data.mensagem || 'Falha ao redefinir a senha.');
+            alert(data.mensagem || 'Falha ao redefinir a palavra-passe.');
         }
     } catch (error) {
         console.error('Erro na redefinição:', error);
