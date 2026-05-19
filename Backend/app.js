@@ -9,7 +9,7 @@ require("dotenv").config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const SECRET = process.env.JWT_SECRET || "minha_chave_secreta_para_gerar_tokens_12345"; 
 
 // Inicializa o motor do Gemini utilizando a chave de API guardada no ambiente seguro (.env)
@@ -21,21 +21,6 @@ app.use(express.json());
 // A linha mágica do Frontend
 app.use(express.static(path.join(__dirname, '../FrontEnd/Body')));
 
-// ... (daqui para baixo, a partir da linha 16, você mantém o seu código normal com as rotas app.get("/receitas", etc) ....
-
-// GET (listar receitas)
-app.get("/receitas", (req, res) => {
-  try {
-    const data = fs.readFileSync(caminhoReceitas, "utf-8");
-    const receitas = JSON.parse(data);
-    res.status(200).json(receitas);
-  } catch (error) {
-    res.status(500).send("Erro ao buscar receitas");
-  } // FECHAMENTO ADICIONADO AQUI
-}); // FECHAMENTO ADICIONADO AQUI
-
-// POST (criar receita)
-app.post("/receitas", (req, res) => {
 // ==========================================
 // IMPORTAR E USAR AS ROTAS ORGANIZADAS
 // ==========================================
