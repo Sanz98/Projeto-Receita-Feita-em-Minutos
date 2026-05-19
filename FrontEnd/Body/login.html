@@ -47,12 +47,17 @@
         <input type="text" id="username" placeholder="Seu usuário" required>
       </div>
       
-      <div class="input-group">
+     <div class="input-group">
         <label for="password">Senha</label>
-        <input type="password" id="password" placeholder="Sua senha" required>
+        <input type="password" id="password" placeholder="Digite sua senha" required />
       </div>
 
-      <button type="submit" class="btn-primary">Entrar na plataforma</button>
+      <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
+        <a href="esqueciSenha.html" style="color: var(--primary-food); font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--primary-hover)'" onmouseout="this.style.color='var(--primary-food)'">
+          Esqueci minha senha
+        </a>
+      </div>
+      <button type="submit" class="btn-primary">Entrar</button>
     </form>
 
     <a href="register.html" class="register-link">Ainda não tem conta? <span>Cadastre-se aqui</span></a>
