@@ -22,7 +22,7 @@ function obterToken() {
 // ==========================================
 function gerarImagemReceita(nome, link) {
   if (link) {
-    const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
     const match = link.match(regex);
     if (match && match[1].length === 11) {
       return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
@@ -47,7 +47,7 @@ function mostrarPreview() {
     return;
   }
 
-  const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
   const match = link.match(regex);
   
   if (match && match[1].length === 11) {
@@ -133,37 +133,52 @@ async function carregar() {
 }
 
 // ==========================================
-// CRIAR RECEITA (COM EFEITO DE LOADING)
+// CRIAR RECEITA (INTEGRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL - GEMINI)
 // ==========================================
 async function criarReceita() {
   const linkInput = document.getElementById("input-link");
-  const link = linkInput ? linkInput.value.trim() : "";
+  const linkOriginal = linkInput ? linkInput.value.trim() : ""; 
   const btnExtrair = document.querySelector("#home .form .btn-primary");
 
-  if (!link) {
+  if (!linkOriginal) {
     return alert("Por favor, cole um link válido para extrair a receita!");
   }
 
+  // --- INÍCIO DO EFEITO VISUAL DE LOADING ---
   const textoOriginal = btnExtrair.innerText;
-  btnExtrair.innerText = "Extraindo... ⏳";
+  btnExtrair.innerText = "Processando IA... 🤖";
   btnExtrair.style.opacity = "0.7";
   btnExtrair.style.cursor = "wait";
   btnExtrair.disabled = true;
 
-  let nome = "Receita via Link";
-  let ingredientes = "Extraindo ingredientes do vídeo...";
-  const urlImagemGerada = gerarImagemReceita(nome, link);
-
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 1. Faz a chamada HTTP POST para a rota de IA do nosso Back-end seguro
+    const respostaIA = await fetch("http://localhost:3000/receitas/extrair-ia", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ link: linkOriginal })
+    });
 
+    if (!respostaIA.ok) {
+      const erroDados = await respostaIA.json();
+      throw new Error(erroDados.mensagem || "A Inteligência Artificial falhou ao analisar este link.");
+    }
+
+    // Recebe o objeto estruturado { nome, ingredientes } processado pelo Gemini API
+    const dadosExtraidos = await respostaIA.json(); 
+    
+    const nome = dadosExtraidos.nome || "Receita Extraída por IA";
+    const ingredientes = dadosExtraidos.ingredientes || "Ingredientes não catalogados";
+    const urlImagemGerada = gerarImagemReceita(nome, linkOriginal);
+
+    // 2. Persiste a receita real gerada pela IA no nosso banco de dados JSON nativo do servidor
     const res = await fetch(API, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
         "Authorization": `Bearer ${obterToken()}`
       },
-      body: JSON.stringify({ nome, ingredientes, link, imagem: urlImagemGerada })
+      body: JSON.stringify({ nome, ingredientes, link: linkOriginal, imagem: urlImagemGerada })
     });
 
     if (res.ok) {
@@ -185,9 +200,10 @@ async function criarReceita() {
       }
     }
   } catch (error) {
-    console.error("Erro ao salvar a receita:", error);
-    alert("Falha de conexão. O servidor pode estar desligado.");
+    console.error("Erro no fluxo de execução de IA:", error);
+    alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
   } finally {
+    // --- FIM DO EFEITO DE LOADING ---
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
     btnExtrair.style.cursor = "pointer";
@@ -263,7 +279,7 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
     if (res.ok) {
       fecharModalEditar();
       carregar(); 
-      alert("Receita updated com sucesso!");
+      alert("Receita atualizada com sucesso!");
     } else {
       alert("Erro ao atualizar a receita no servidor.");
     }
@@ -296,9 +312,9 @@ async function salvarReceitaManual() {
   }
 
   if (!imagem) {
-    const palabraChave = encodeURIComponent(nome.trim().split(' ')[0]);
+    const palavraChave = encodeURIComponent(nome.trim().split(' ')[0]);
     const randomID = Math.floor(Math.random() * 1000);
-    imagem = `https://loremflickr.com/400/300/${palabraChave},food/all?lock=${randomID}`;
+    imagem = `https://loremflickr.com/400/300/${palavraChave},food/all?lock=${randomID}`;
   }
 
   try {
@@ -433,6 +449,9 @@ function atualizarListaCompras() {
   }
 }
 
+// ==========================================
+// INTERAÇÃO COM HISTÓRICO DE PEDIDOS DO DELIVERY
+// ==========================================
 function fecharPedidoShopper(valorTotal) {
   if (itensParaComprarGlobal.length === 0) return alert("Seu carrinho de compras está vazio!");
 

@@ -12,14 +12,18 @@ collection:
     meta:
       id: req_f3e56a6193894e8f8059f9b3d80d32e3
       created: 1778773121259
-      modified: 1778789855204
+      modified: 1779134581386
       isPrivate: false
       description: ""
       sortKey: -1778773121259
     method: POST
     body:
       mimeType: application/json
-      text: ""
+      text: |-
+        {
+         "username": "diogo",
+        "password": "senha1"
+        }
     headers:
       - name: Content-Type
         value: application/json
@@ -94,20 +98,37 @@ collection:
         meta:
           id: req_26509ca0c5b847859775e8a7d718a7b3
           created: 1778730591966
-          modified: 1778786310637
+          modified: 1779135080596
           isPrivate: false
           description: ""
           sortKey: -1778095813386
         method: POST
         body:
           mimeType: application/json
-          text: |-
-            {
-              "nome": "Panqueca de Frango",
-              "ingredientes": "Extraindo ingredientes do vídeo...",
-              "link": "https://youtu.be/qbd4_ETAENU?si=BB_gBFWC3XrmI8YN",
-              "imagem": "https://img.youtube.com/vi/qbd4_ETAENU/hqdefault.jpg"
-            }
+          text: >-
+            [
+              {
+                "id": "1",
+                "nome": "Bolo de Chocolate Fofinho",
+                "ingredientes": "3 xícaras de farinha de trigo, 2 xícaras de açúcar, 1 xícara de chocolate em pó, 1 colher de sopa de fermento, 3 ovos, 1 xícara de óleo",
+                "link": "https://www.tudogostoso.com.br/receita/23-bolo-de-chocolate.html",
+                "imagem": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              },
+              {
+                "id": "2",
+                "nome": "Lasanha Bolonhesa Clássica",
+                "ingredientes": "500g de massa de lasanha, 500g de carne moída, 2 sachês de molho de tomate, 400g de queijo mussarela, 400g de presunto",
+                "link": "https://www.tudogostoso.com.br/receita/10032-lasanha-a-bolonhesa.html",
+                "imagem": "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              },
+              {
+                "id": "3",
+                "nome": "Panqueca de Carne Moída Rápida",
+                "ingredientes": "2 xícaras de leite, 2 ovos, 2 xícaras de farinha de trigo, 1 colher de sal, 300g de carne moída refogada",
+                "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "imagem": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              }
+            ]
         headers:
           - name: Content-Type
             value: application/json
@@ -131,17 +152,27 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: ""
+      - url: http://localhost:3000/receitas/1716035000002
         name: "Atualizar Receita "
         meta:
           id: req_ba4b699fddc04c229fe39c2f3fdc3eae
           created: 1778776156031
-          modified: 1778776214251
+          modified: 1779131271467
           isPrivate: false
           description: ""
           sortKey: -1778095813686
         method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nome": "Bolo Editado no Insomnia",
+              "ingredientes": "Novos ingredientes teste...",
+              "imagem": "https://loremflickr.com/400/300/cake"
+            }
         headers:
+          - name: Content-Type
+            value: application/json
           - name: User-Agent
             value: insomnia/12.5.0
             description: ""
@@ -190,7 +221,7 @@ collection:
         meta:
           id: req_147848e415e64867b1f9f1730e8bfcf6
           created: 1778176426594
-          modified: 1778786692911
+          modified: 1779134556238
           isPrivate: false
           description: ""
           sortKey: -1778176401021
@@ -200,7 +231,7 @@ collection:
           text: |-
             {
             "username": "diogo",
-            "password": "senha123"
+            "password": "senha1"
             }
         headers:
           - name: Content-Type
@@ -217,12 +248,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://localhost:3000/users/
+      - url: http://localhost:3000/users/1
         name: Deletar Usuário
         meta:
           id: req_8c5a2f1917c64ef4966b4b180b53e2f9
           created: 1778176456579
-          modified: 1778790467819
+          modified: 1779139642738
           isPrivate: false
           description: ""
           sortKey: -1778176401121
@@ -235,7 +266,7 @@ collection:
         authentication:
           type: bearer
           disabled: false
-          token: jwt-fake
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImRpb2dvIiwiaWQiOiIxIiwiaWF0IjoxNzc5MTM5NjA4LCJleHAiOjE3NzkxNDMyMDh9.h-P0g6L77dYFF7dED455DXb-8Qiu1myI2q5lOrgyiuk
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -276,6 +307,29 @@ collection:
             send: true
             store: true
           rebuildPath: true
+      - url: http://localhost:3000/perfil/senha
+        name: Alterar Senha
+        meta:
+          id: req_340e32413dc04a49a8903a2e107d0f36
+          created: 1779144500292
+          modified: 1779144596540
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400821
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
   - name: Login
     meta:
       id: fld_6e2e9e4e755e421891d636c9bc1ed97e
@@ -283,6 +337,30 @@ collection:
       modified: 1778773171784
       sortKey: -1778773171784
       description: ""
+    children:
+      - url: http://localhost:3000/perfil
+        name: Excluir Conta
+        meta:
+          id: req_7c55c98b4d334b758cd7c442705f41a8
+          created: 1779144633844
+          modified: 1779144661973
+          isPrivate: false
+          description: ""
+          sortKey: -1779144633944
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:

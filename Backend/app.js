@@ -5,9 +5,15 @@ const path = require("path");
 const jwt = require("jsonwebtoken"); 
 require("dotenv").config();
 
+// Importação da biblioteca oficial da Inteligência Artificial do Google
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.JWT_SECRET || "minha_chave_secreta_para_gerar_tokens_12345"; 
+
+// Inicializa o motor do Gemini utilizando a chave de API guardada no ambiente seguro (.env)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 app.use(cors());
 app.use(express.json());
@@ -20,6 +26,60 @@ const rotasUsuarios = require('./src/routes/users');
 
 app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
+
+// ==========================================
+// ROTA DE EXTRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL (GEMINI) - VERSÃO BLINDADA
+// ==========================================
+app.post('/receitas/extrair-ia', async (req, res) => {
+  try {
+    const { link } = req.body;
+    if (!link) {
+      return res.status(400).json({ mensagem: "Por favor, forneça um link válido para a extração." });
+    }
+
+    // Validação preventiva para garantir que a chave da API está configurada
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Erro: Variável GEMINI_API_KEY não configurada no arquivo .env");
+      return res.status(500).json({ mensagem: "Chave de API da Inteligência Artificial não configurada no servidor." });
+    }
+
+    // Instancia o modelo leve, veloz e ideal para processamento de texto (gemini-1.5-flash)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Engenharia de prompt detalhada para instruir a resposta pura em JSON
+    const prompt = `Você é um engenheiro de dados e assistente culinário especializado em estruturação de dados.
+    Analise o seguinte link de receita: "${link}".
+    Com base no contexto do link ou no seu conhecimento enciclopédico global sobre culinária, determine o nome do prato e extraia todos os ingredientes necessários para o preparo.
+    Regra de formatação de ingredientes: Formate todos os ingredientes em uma única linha de texto contínua, onde cada ingrediente é obrigatoriamente separado por uma vírgula simples (Exemplo: "3 ovos, 2 xícaras de açúcar, 1 colher de fermento").
+    
+    Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicional:
+    {
+      "nome": "Nome da Receita Encontrada",
+      "ingredientes": "ingrediente um, ingrediente dois, ingrediente três"
+    }`;
+
+    // Dispara a requisição assíncrona para os servidores do Google AI
+    const resultado = await model.generateContent(prompt);
+    let textoResposta = resultado.response.text().trim();
+
+    // === INÍCIO DO NOVO BLOCO DE LIMPEZA AVANÇADA ===
+    // Limpa de forma cirúrgica caso o modelo retorne crases de Markdown involuntariamente
+    if (textoResposta.startsWith("```")) {
+      textoResposta = textoResposta.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    }
+    // === FIM DO NOVO BLOCO DE LIMPEZA AVANÇADA ===
+    
+    // Converte o texto plano retornado em um objeto literal válido do JavaScript
+    const dadosFormatados = JSON.parse(textoResposta);
+
+    // Devolve os dados estruturados reais da receita para o Frontend
+    res.status(200).json(dadosFormatados);
+
+  } catch (error) {
+    console.error("Erro crítico na integração com o Gemini API:", error);
+    res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita com Inteligência Artificial." });
+  }
+});
 
 // ==========================================
 // ROTA: SISTEMA DE AVALIAÇÕES (VINCULADO AO USUÁRIO)
@@ -95,7 +155,7 @@ app.put('/perfil/senha', (req, res) => {
 
       if (index !== -1) {
         if (usuarios[index].password !== senhaAtual) {
-          return res.status(400).json({ mensagem: "A senha atual está incorreta." });
+          return res.status(400).json({ message: "A senha atual está incorreta." });
         }
         usuarios[index].password = novaSenha;
         fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
