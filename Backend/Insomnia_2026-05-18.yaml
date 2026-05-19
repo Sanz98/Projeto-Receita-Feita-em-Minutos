@@ -1,0 +1,376 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: API Receita Feita em Minutos
+meta:
+  id: wrk_97b8cf8e8dfd4879a86289640972d979
+  created: 1778730547034
+  modified: 1778730547034
+  description: ""
+collection:
+  - url: http://localhost:3000/users/login
+    name: Login
+    meta:
+      id: req_f3e56a6193894e8f8059f9b3d80d32e3
+      created: 1778773121259
+      modified: 1779134581386
+      isPrivate: false
+      description: ""
+      sortKey: -1778773121259
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+         "username": "diogo",
+        "password": "senha1"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - name: CRUD Receitas
+    meta:
+      id: fld_894bb8f36520430fa55572a1d3d8a478
+      created: 1778095769053
+      modified: 1778095769053
+      sortKey: -1778095769053
+      description: ""
+    children:
+      - url: http://localhost:3000/receitas
+        name: Listar Receita
+        meta:
+          id: req_4e9125d1ce1541968c97145aadd724d1
+          created: 1778095799169
+          modified: 1778730587257
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813486
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/receitas/123456789
+        name: Deletar Receita
+        meta:
+          id: req_e652836dd5644d06a8e467493801435f
+          created: 1778095891139
+          modified: 1778730583631
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813586
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/receitas
+        name: Criar Receita
+        meta:
+          id: req_26509ca0c5b847859775e8a7d718a7b3
+          created: 1778730591966
+          modified: 1779135080596
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813386
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            [
+              {
+                "id": "1",
+                "nome": "Bolo de Chocolate Fofinho",
+                "ingredientes": "3 xícaras de farinha de trigo, 2 xícaras de açúcar, 1 xícara de chocolate em pó, 1 colher de sopa de fermento, 3 ovos, 1 xícara de óleo",
+                "link": "https://www.tudogostoso.com.br/receita/23-bolo-de-chocolate.html",
+                "imagem": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              },
+              {
+                "id": "2",
+                "nome": "Lasanha Bolonhesa Clássica",
+                "ingredientes": "500g de massa de lasanha, 500g de carne moída, 2 sachês de molho de tomate, 400g de queijo mussarela, 400g de presunto",
+                "link": "https://www.tudogostoso.com.br/receita/10032-lasanha-a-bolonhesa.html",
+                "imagem": "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              },
+              {
+                "id": "3",
+                "nome": "Panqueca de Carne Moída Rápida",
+                "ingredientes": "2 xícaras de leite, 2 ovos, 2 xícaras de farinha de trigo, 1 colher de sal, 300g de carne moída refogada",
+                "link": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "imagem": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80"
+              }
+            ]
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+          - name: New Name
+            value: Authorization
+            description: ""
+            disabled: false
+          - name: New Value
+            value: Bearer seu_token_aqui
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/receitas/1716035000002
+        name: "Atualizar Receita "
+        meta:
+          id: req_ba4b699fddc04c229fe39c2f3fdc3eae
+          created: 1778776156031
+          modified: 1779131271467
+          isPrivate: false
+          description: ""
+          sortKey: -1778095813686
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "nome": "Bolo Editado no Insomnia",
+              "ingredientes": "Novos ingredientes teste...",
+              "imagem": "https://loremflickr.com/400/300/cake"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: CRUD Usuários
+    meta:
+      id: fld_452f6be6ea4a434d9b958150b7acf359
+      created: 1778095788895
+      modified: 1778095788895
+      sortKey: -1778095788895
+      description: ""
+    children:
+      - url: http://localhost:3000/users
+        name: Listar Usuario
+        meta:
+          id: req_325a146f537b4644a1953582fe0735a7
+          created: 1778176400921
+          modified: 1778775351293
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400921
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/users/register
+        name: Criar Usuário
+        meta:
+          id: req_147848e415e64867b1f9f1730e8bfcf6
+          created: 1778176426594
+          modified: 1779134556238
+          isPrivate: false
+          description: ""
+          sortKey: -1778176401021
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            "username": "diogo",
+            "password": "senha1"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/users/1
+        name: Deletar Usuário
+        meta:
+          id: req_8c5a2f1917c64ef4966b4b180b53e2f9
+          created: 1778176456579
+          modified: 1779139642738
+          isPrivate: false
+          description: ""
+          sortKey: -1778176401121
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          disabled: false
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImRpb2dvIiwiaWQiOiIxIiwiaWF0IjoxNzc5MTM5NjA4LCJleHAiOjE3NzkxNDMyMDh9.h-P0g6L77dYFF7dED455DXb-8Qiu1myI2q5lOrgyiuk
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/users/1
+        name: Atualizar Usuário
+        meta:
+          id: req_09970f7d24054e45a05b1d28de2aa4ac
+          created: 1778775823294
+          modified: 1778775973917
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400971
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "username": "diogo_novo_nome",
+              "password": "nova_senha_super_segura"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:3000/perfil/senha
+        name: Alterar Senha
+        meta:
+          id: req_340e32413dc04a49a8903a2e107d0f36
+          created: 1779144500292
+          modified: 1779144596540
+          isPrivate: false
+          description: ""
+          sortKey: -1778176400821
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Login
+    meta:
+      id: fld_6e2e9e4e755e421891d636c9bc1ed97e
+      created: 1778773171784
+      modified: 1778773171784
+      sortKey: -1778773171784
+      description: ""
+    children:
+      - url: http://localhost:3000/perfil
+        name: Excluir Conta
+        meta:
+          id: req_7c55c98b4d334b758cd7c442705f41a8
+          created: 1779144633844
+          modified: 1779144661973
+          isPrivate: false
+          description: ""
+          sortKey: -1779144633944
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_3adf2eef39d549bd84d5eea9b7e67279
+    created: 1778095746204
+    modified: 1778095746204
+environments:
+  name: Base Environment
+  meta:
+    id: env_3a923a2686354f209f213df50ca858be
+    created: 1777942037499
+    modified: 1778095746175
+    isPrivate: false

@@ -1,8 +1,8 @@
 async function fazerLogin(event) {
-  event.preventDefault(); // Impede a tela de piscar
+  event.preventDefault(); 
 
-  const usuarioDigitado = document.getElementById('username').value;
-  const senhaDigitada = document.getElementById('password').value;
+  const usuarioDigitado = document.getElementById('username').value.trim();
+  const senhaDigitada = document.getElementById('password').value.trim();
   const mensagemErro = document.getElementById('msg-erro');
 
   try {
@@ -13,11 +13,12 @@ async function fazerLogin(event) {
     });
 
     if (resposta.ok) {
-      // Cria o "carimbo" de acesso liberado
+      const dados = await resposta.json();
       localStorage.setItem('logado', 'true');
-      window.location.href = 'index.html'; // Vai pro site principal
+      localStorage.setItem('token', dados.token); 
+      window.location.href = 'index.html'; 
     } else {
-      mensagemErro.style.display = 'block'; // Mostra o erro em vermelho
+      mensagemErro.style.display = 'block'; 
     }
   } catch (error) {
     console.error("Erro na API de login:", error);
