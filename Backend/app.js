@@ -28,7 +28,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL (GEMINI) - VERSÃO BLINDADA
+// ROTA DE EXTRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL (GEMINI) + METADADOS DO YOUTUBE
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -43,18 +43,42 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(500).json({ mensagem: "Chave de API da Inteligência Artificial não configurada no servidor." });
     }
 
-    // Instancia o modelo leve, veloz e ideal para processamento de texto (gemini-1.5-flash)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // --- ENGENHARIA DE CONTEXTO: BUSCAR O TÍTULO REAL DIRETAMENTE NO YOUTUBE ---
+    let tituloRealDoVideo = "";
+    try {
+      if (link.includes("youtu")) {
+        // Consulta a API pública do YouTube para capturar o título do vídeo sem precisar de chaves extras
+        const urlMetadados = `https://www.youtube.com/oembed?url=${encodeURIComponent(link)}&format=json`;
+        const respostaMetadados = await fetch(urlMetadados);
+        
+        if (respostaMetadados.ok) {
+          const metadados = await respostaMetadados.json();
+          tituloRealDoVideo = metadados.title || "";
+        }
+      }
+    } catch (erroMetadados) {
+      console.log("Aviso: Não foi possível ler o título via oEmbed, o Gemini tentará deduzir em modo global.");
+    }
+
+    // Instancia o modelo estável mais recente do ecossistema Gemini (gemini-2.5-flash)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    // Se encontramos o título do vídeo, nós o injetamos no contexto do prompt com prioridade máxima
+    const contextoTitulo = tituloRealDoVideo 
+      ? `O título real deste vídeo no YouTube é: "${tituloRealDoVideo}". Use este título como base absoluta para dar nome ao prato.` 
+      : "";
 
     // Engenharia de prompt detalhada para instruir a resposta pura em JSON
     const prompt = `Você é um engenheiro de dados e assistente culinário especializado em estruturação de dados.
     Analise o seguinte link de receita: "${link}".
-    Com base no contexto do link ou no seu conhecimento enciclopédico global sobre culinária, determine o nome do prato e extraia todos os ingredientes necessários para o preparo.
+    ${contextoTitulo}
+    
+    Com base no contexto fornecido e no seu conhecimento enciclopédico sobre culinária, determine o nome correto do prato e extraia todos os ingredientes necessários para o preparo.
     Regra de formatação de ingredientes: Formate todos os ingredientes em uma única linha de texto contínua, onde cada ingrediente é obrigatoriamente separado por uma vírgula simples (Exemplo: "3 ovos, 2 xícaras de açúcar, 1 colher de fermento").
     
-    Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicional:
+    Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicionativo:
     {
-      "nome": "Nome da Receita Encontrada",
+      "nome": "Nome Correto da Receita Encontrada",
       "ingredientes": "ingrediente um, ingrediente dois, ingrediente três"
     }`;
 
@@ -62,12 +86,12 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     const resultado = await model.generateContent(prompt);
     let textoResposta = resultado.response.text().trim();
 
-    // === INÍCIO DO NOVO BLOCO DE LIMPEZA AVANÇADA ===
+    // === INÍCIO DO BLOCO DE LIMPEZA AVANÇADA ===
     // Limpa de forma cirúrgica caso o modelo retorne crases de Markdown involuntariamente
     if (textoResposta.startsWith("```")) {
       textoResposta = textoResposta.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
     }
-    // === FIM DO NOVO BLOCO DE LIMPEZA AVANÇADA ===
+    // === FIM DO BLOCO DE LIMPEZA AVANÇADA ===
     
     // Converte o texto plano retornado em um objeto literal válido do JavaScript
     const dadosFormatados = JSON.parse(textoResposta);
