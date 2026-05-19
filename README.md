@@ -1,4 +1,4 @@
-Markdown# Feito em Minutos (Receita Fácil) 🍳
+ Feito em Minutos (Receita Fácil) 🍳
 ### Documentação do Projeto e Relatório Técnico Acadêmico de Engenharia de Software
 **Disciplina:** Metodologias de Desenvolvimento de Software / Engenharia de Software  
 **Metodologia Ágil Aplicada:** Scrum  
