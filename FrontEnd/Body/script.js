@@ -9,7 +9,8 @@ function sair() {
   window.location.href = 'login.html';
 }
 
-const API = "http://localhost:3000/receitas";
+// CORREÇÃO 1: Rota relativa para as receitas!
+const API = "/receitas";
 let receitasGlobais = [];
 let itensParaComprarGlobal = []; 
 
@@ -144,7 +145,6 @@ async function criarReceita() {
     return alert("Por favor, cole um link válido para extrair a receita!");
   }
 
-  // --- INÍCIO DO EFEITO VISUAL DE LOADING ---
   const textoOriginal = btnExtrair.innerText;
   btnExtrair.innerText = "Processando IA... 🤖";
   btnExtrair.style.opacity = "0.7";
@@ -152,8 +152,8 @@ async function criarReceita() {
   btnExtrair.disabled = true;
 
   try {
-    // 1. Faz a chamada HTTP POST para a rota de IA do nosso Back-end seguro
-    const respostaIA = await fetch("http://localhost:3000/receitas/extrair-ia", {
+    // CORREÇÃO 2: Rota relativa para a extração via Gemini!
+    const respostaIA = await fetch("/receitas/extrair-ia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ link: linkOriginal })
@@ -164,14 +164,12 @@ async function criarReceita() {
       throw new Error(erroDados.mensagem || "A Inteligência Artificial falhou ao analisar este link.");
     }
 
-    // Recebe o objeto estruturado { nome, ingredientes } processado pelo Gemini API
     const dadosExtraidos = await respostaIA.json(); 
     
     const nome = dadosExtraidos.nome || "Receita Extraída por IA";
     const ingredientes = dadosExtraidos.ingredientes || "Ingredientes não catalogados";
     const urlImagemGerada = gerarImagemReceita(nome, linkOriginal);
 
-    // 2. Persiste a receita real gerada pela IA no nosso banco de dados JSON nativo do servidor
     const res = await fetch(API, {
       method: "POST",
       headers: { 
@@ -203,7 +201,6 @@ async function criarReceita() {
     console.error("Erro no fluxo de execução de IA:", error);
     alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
   } finally {
-    // --- FIM DO EFEITO DE LOADING ---
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
     btnExtrair.style.cursor = "pointer";
@@ -597,7 +594,8 @@ async function enviarAvaliacao() {
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
 
   try {
-    const res = await fetch("http://localhost:3000/avaliacoes", {
+    // CORREÇÃO 3: Rota relativa para as avaliações!
+    const res = await fetch("/avaliacoes", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -649,7 +647,8 @@ async function alterarSenha() {
   if (novaSenha.length < 6) return alert("A nova senha deve ter pelo menos 6 caracteres.");
 
   try {
-    const res = await fetch("http://localhost:3000/perfil/senha", {
+    // CORREÇÃO 4: Rota relativa para atualizar a senha!
+    const res = await fetch("/perfil/senha", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -675,7 +674,8 @@ async function excluirConta() {
   if (!confirmacao) return;
 
   try {
-    const res = await fetch("http://localhost:3000/perfil", {
+    // CORREÇÃO 5: Rota relativa para excluir o perfil!
+    const res = await fetch("/perfil", {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });

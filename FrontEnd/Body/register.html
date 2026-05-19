@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar | Feito em Minutos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root { 
+      --bg-dark: #121214; 
+      --card-dark: #202024; 
+      --primary-food: #FF6B00; 
+      --primary-hover: #E55C00; 
+      --text-light: #F8F8F2; 
+      --text-muted: #A1A1AA; 
+      --border-color: #323238; 
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { 
+      background-color: var(--bg-dark); 
+      color: var(--text-light); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100vh; 
+      background-image: radial-gradient(circle at 50% -20%, #3a1a05, var(--bg-dark) 50%); 
+    }
+    .auth-container { 
+      background: var(--card-dark); 
+      padding: 40px; 
+      border-radius: 24px; 
+      width: 100%; 
+      max-width: 420px; 
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4); 
+      border: 1px solid var(--border-color);
+    }
+    .logo-icon { 
+      width: 64px; 
+      height: 64px; 
+      background: rgba(255, 107, 0, 0.1); 
+      border-radius: 16px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      margin: 0 auto 24px auto; 
+      color: var(--primary-food); 
+    }
+    .logo-icon svg { width: 32px; height: 32px; }
+    h2 { text-align: center; font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+    .form-group { margin-bottom: 20px; position: relative; }
+    label { display: block; font-size: 14px; margin-bottom: 8px; color: var(--text-light); font-weight: 500; }
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    .input-wrapper svg { position: absolute; left: 16px; color: var(--text-muted); width: 20px; height: 20px; transition: color 0.2s; }
+    input { 
+      width: 100%; 
+      padding: 14px 16px 14px 48px; 
+      background-color: #121214; 
+      border: 2px solid var(--border-color); 
+      border-radius: 12px; 
+      color: var(--text-light); 
+      font-size: 15px; 
+      outline: none; 
+    }
+    input:focus { border-color: var(--primary-food); background-color: #0d0d0f; }
+    .btn-auth { 
+      width: 100%; 
+      padding: 14px; 
+      background-color: var(--primary-food); 
+      color: white; 
+      border: none; 
+      border-radius: 12px; 
+      font-size: 16px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      margin-top: 12px; 
+    }
+    .footer-links { text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted); }
+    .footer-links a { color: var(--primary-food); text-decoration: none; font-weight: 600; }
+    .status-msg { padding: 12px; border-radius: 12px; text-align: center; font-size: 14px; margin-bottom: 20px; display: none; font-weight: 500; }
+    #msg-erro { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    #msg-sucesso { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  </style>
+</head>
+
+<body>
+
+  <div class="auth-container">
+    <div class="logo-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+    </div>
+    
+    <h2>Criar Conta</h2>
+    <p class="subtitle">Junte-se à comunidade Feito em Minutos</p>
+
+    <div id="msg-erro" class="status-msg"></div>
+    <div id="msg-sucesso" class="status-msg"></div>
+
+    <form id="form-cadastro" onsubmit="registrarUsuario(event)">
+      <div class="form-group">
+        <label for="username">Nome de Usuário</label>
+        <div class="input-wrapper">
+          <input type="text" id="username" placeholder="Escolha um nome de usuário" required>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" placeholder="Crie uma senha forte" required>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-auth">Cadastrar</button>
+    </form>
+
+    <div class="footer-links">
+      Já tem uma conta? <a href="login.html">Faça login aqui</a>
+    </div>
+  </div>
+
+  <script>
+    async function registrarUsuario(event) {
+      event.preventDefault(); // Impede a página de recarregar
+
+      const inputUser = document.getElementById('username');
+      const inputPass = document.getElementById('password');
+      const msgErro = document.getElementById('msg-erro');
+      const msgSucesso = document.getElementById('msg-sucesso');
+
+      msgErro.style.display = 'none';
+      msgSucesso.style.display = 'none';
+
+      const usuarioDigitado = inputUser.value.trim();
+      const senhaDigitada = inputPass.value.trim();
+
+      if (usuarioDigitado.length < 3) {
+        msgErro.innerText = "O nome deve ter pelo menos 3 caracteres.";
+        msgErro.style.display = 'block';
+        return;
+      }
+      if (senhaDigitada.length < 6) {
+        msgErro.innerText = "A senha deve ter pelo menos 6 caracteres.";
+        msgErro.style.display = 'block';
+        return;
+      }
+
+      try {
+        const resposta = await fetch('/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usuarioDigitado, password: senhaDigitada })
+        });
+
+        const dados = await resposta.json();
+
+        if (resposta.status === 201) {
+          msgSucesso.innerText = "Conta criada com sucesso! Redirecionando...";
+          msgSucesso.style.display = 'block';
+          
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+        } else {
+          msgErro.innerText = dados.mensagem || "Erro ao criar conta.";
+          msgErro.style.display = 'block';
+        }
+      } catch (error) {
+        console.error("Erro:", error);
+        msgErro.innerText = "Erro de conexão. Verifique se o servidor backend está a correr.";
+        msgErro.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

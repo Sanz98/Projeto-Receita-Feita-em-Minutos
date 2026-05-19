@@ -1,8 +1,9 @@
 async function registrarUsuario(event) {
   event.preventDefault(); 
 
-  const usuarioDigitado = document.getElementById('reg-username').value.trim();
-  const senhaDigitada = document.getElementById('reg-password').value.trim();
+  // CORREÇÃO 1: IDs atualizados para bater certo com o HTML atual
+  const usuarioDigitado = document.getElementById('username').value.trim();
+  const senhaDigitada = document.getElementById('password').value.trim();
   
   const msgErro = document.getElementById('msg-erro');
   const msgSucesso = document.getElementById('msg-sucesso');
@@ -22,7 +23,8 @@ async function registrarUsuario(event) {
   }
 
   try {
-    const resposta = await fetch('http://localhost:3000/users/register', {
+    // CORREÇÃO 2: Rota relativa! O navegador descobre a URL original sozinho
+    const resposta = await fetch('/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: usuarioDigitado, password: senhaDigitada })
@@ -39,12 +41,20 @@ async function registrarUsuario(event) {
       }, 2000);
 
     } else {
-      msgErro.innerText = dados.mensagem || "Erro ao criar conta. Tente outro usuário.";
+      msgErro.innerText = dados.mensagem || "Erro ao criar conta.";
       msgErro.style.display = 'block';
     }
   } catch (error) {
     console.error("Erro na API de registro:", error);
-    msgErro.innerText = "Erro de conexão. Verifique se o Back-end está rodando.";
+    msgErro.innerText = "Erro de conexão. Verifique se o servidor está ativo.";
     msgErro.style.display = 'block';
   }
 }
+
+// CORREÇÃO 3: Garante que o evento está ligado ao formulário para evitar "refresh"
+document.addEventListener("DOMContentLoaded", () => {
+  const formCadastro = document.getElementById('form-cadastro');
+  if (formCadastro) {
+    formCadastro.addEventListener('submit', registrarUsuario);
+  }
+});
