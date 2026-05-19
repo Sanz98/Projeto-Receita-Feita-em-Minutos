@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
 require("dotenv").config();
+const ngrok = require("ngrok"); // <-- IMPORTAÇÃO DO NGROK ADICIONADA AQUI
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -232,6 +233,20 @@ app.delete('/perfil', (req, res) => {
 });
 
 // ==========================================
-// INICIAR SERVIDOR
 // ==========================================
-app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+// INICIAR SERVIDOR & NGROK
+// ==========================================
+app.listen(PORT, async () => {
+  console.log(`Servidor rodando localmente em http://localhost:${PORT}`);
+
+  try {
+    // Inicia o túnel do ngrok usando a porta e o token do .env
+    const url = await ngrok.connect({
+      addr: PORT,
+      authtoken: process.env.NGROK_AUTHTOKEN 
+    });
+    console.log(`🌐 URL Pública do ngrok: ${url}`);
+  } catch (error) {
+    console.error("⚠️ Erro ao iniciar o ngrok:", error.message);
+  }
+});
