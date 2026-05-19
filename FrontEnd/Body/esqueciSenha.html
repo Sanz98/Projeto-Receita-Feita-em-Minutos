@@ -3,33 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recuperar Senha - Receita Feita em Minutos</title>
-    <!-- Vinculando o seu arquivo de CSS existente -->
-    <link rel="stylesheet" href="Style/styles.css">
+    <title>Recuperar Senha - Feito em Minutos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-dark: #121214; --card-dark: #202024; --primary-food: #FF6B00; --primary-hover: #E55C00; --text-light: #F8F8F2; --text-muted: #A1A1AA; --border-color: #323238; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #3a1a05, var(--bg-dark) 50%); }
+        .auth-container { background: var(--card-dark); padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); width: 100%; max-width: 420px; border: 1px solid var(--border-color); text-align: center; }
+        h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
+        .subtitle { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 30px; }
+        .input-group { text-align: left; margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 8px; color: var(--text-muted); }
+        .input-group input { width: 100%; padding: 14px; border-radius: 12px; background: #121214; border: 1px solid var(--border-color); color: var(--text-light); font-size: 1rem; transition: border 0.3s, box-shadow 0.3s; }
+        .input-group input:focus { border-color: var(--primary-food); outline: none; box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2); }
+        .btn-primary { width: 100%; padding: 14px; background: var(--primary-food); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s, transform 0.1s; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .form-footer { margin-top: 24px; font-size: 0.9rem; color: var(--text-muted); }
+        .form-footer a { color: var(--primary-food); text-decoration: none; font-weight: 600; }
+        .form-footer a:hover { color: var(--primary-hover); text-decoration: underline; }
+    </style>
 </head>
 <body>
-    <!-- Reutilizando a classe de container do login para manter o mesmo estilo -->
-    <div class="form-container login-container">
-        <div class="form-header">
-            <h2>Esqueci minha senha 🍳</h2>
-            <p>Digite seu e-mail cadastrado. Enviaremos um link seguro para você criar uma nova senha.</p>
-        </div>
+    <div class="auth-container">
+        <h2>Esqueci a Senha 🍳</h2>
+        <p class="subtitle">Insere o teu nome de utilizador. O servidor irá gerar um link seguro para criares uma nova senha.</p>
 
         <form id="form-esqueci">
             <div class="input-group">
-                <label for="email">E-mail de Cadastro</label>
-                <input type="email" id="email" placeholder="Ex: chef@email.com" required>
+                <label for="username">Nome de Utilizador</label>
+                <input type="text" id="username" placeholder="Ex: diogo_sanz" required>
             </div>
             
-            <button type="submit" class="btn-submit">Enviar Link de Recuperação</button>
+            <button type="submit" class="btn-primary">Gerar Link de Recuperação</button>
         </form>
 
         <div class="form-footer">
-            <p>Lembrou a senha? <a href="login.html">Voltar para o Login</a></p>
+            <p>Lembraste-te da senha? <a href="login.html">Voltar para o Login</a></p>
         </div>
     </div>
 
-    <!-- Importando o script que criamos na etapa anterior -->
-    <script src="esqueci-senha.js"></script>
+    <script src="esqueciSenha.js"></script>
 </body>
 </html>

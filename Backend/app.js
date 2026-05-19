@@ -3,7 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
-const bcrypt = require("bcrypt"); // CORREÇÃO 1: Importação do bcrypt adicionada
+const bcrypt = require("bcrypt"); 
 require("dotenv").config();
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, "../FrontEnd/Body")));
 // Lê a pasta onde está o register.html atualmente
 app.use(express.static(path.join(__dirname, "../FrontEnd")));
 
-// ROTA RAIZ: Abre o index.html automaticamente ao aceder a http://localhost:3000
+// ROTA RAIZ: Abre o index.html automaticamente ao acessar http://localhost:3000
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../FrontEnd/Body/index.html'));
 });
@@ -42,7 +42,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL (GEMINI) + METADADOS DO YOUTUBE
+// ROTA DE EXTRAÇÃO REAL COM INTELIGÊNCIA ARTIFICIAL (GEMINI)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -84,9 +84,9 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     Com base no contexto fornecido e no seu conhecimento enciclopédico sobre culinária, determine o nome correto do prato e extraia todos os ingredientes necessários para o preparo.
     Regra de formatação de ingredientes: Formate todos os ingredientes em uma única linha de texto contínua, onde cada ingrediente é obrigatoriamente separado por uma vírgula simples (Exemplo: "3 ovos, 2 xícaras de açúcar, 1 colher de fermento").
     
-    Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicionativo:
+    Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicional:
     {
-      "nome": "Nome Correcto da Receita Encontrada",
+      "nome": "Nome Correto da Receita Encontrada",
       "ingredientes": "ingrediente um, ingrediente dois, ingrediente três"
     }`;
 
@@ -164,8 +164,7 @@ app.post('/avaliacoes', (req, res) => {
 const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
 const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
 
-// Alterar Senha do Usuário logado
-app.put('/perfil/senha', async (req, res) => { // CORREÇÃO 2: Adicionado async para suportar criptografia síncrona
+app.put('/perfil/senha', async (req, res) => { 
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
@@ -179,13 +178,11 @@ app.put('/perfil/senha', async (req, res) => { // CORREÇÃO 2: Adicionado async
       const index = usuarios.findIndex(u => String(u.id) === String(usuarioLogado.id));
 
       if (index !== -1) {
-        // CORREÇÃO 3: Comparar de forma segura usando bcrypt contra o hash salvo na base de dados
         const senhaValida = await bcrypt.compare(senhaAtual, usuarios[index].password);
         if (!senhaValida) {
-          return res.status(400).json({ mensagem: "A senha atual está incorreta." }); // Alinhado para 'mensagem'
+          return res.status(400).json({ mensagem: "A senha atual está incorreta." }); 
         }
         
-        // CORREÇÃO 4: Encriptar a nova senha antes de salvar de modo a manter a segurança do login
         usuarios[index].password = await bcrypt.hash(novaSenha, 10);
         
         fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
@@ -199,7 +196,6 @@ app.put('/perfil/senha', async (req, res) => { // CORREÇÃO 2: Adicionado async
   }
 });
 
-// Excluir Conta e Dados Vinculados (LGPD / Privacidade)
 app.delete('/perfil', (req, res) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -229,6 +225,73 @@ app.delete('/perfil', (req, res) => {
     res.status(200).json({ mensagem: "Sua conta e dados foram excluídos com sucesso." });
   } catch (error) {
     res.status(500).json({ mensagem: "Erro ao excluir a conta." });
+  }
+});
+
+// ==========================================
+// ROTAS PÚBLICAS: FLUXO DE RECUPERAÇÃO DE SENHA (NÃO EXIGEM TOKEN)
+// ==========================================
+let tokensRecuperacaoMemoria = {}; // Armazena temporariamente os tokens na memória viva
+
+// Rota 1: Validar usuário e devolver o link gerado para o Frontend
+app.post('/users/esqueci-senha', (req, res) => {
+  try {
+    const { username } = req.body;
+    const caminhoContas = path.join(__dirname, "./Data/users.json");
+
+    if (!fs.existsSync(caminhoContas)) {
+      return res.status(404).json({ mensagem: "Base de dados de usuários ausente." });
+    }
+
+    const usuarios = JSON.parse(fs.readFileSync(caminhoContas, 'utf8'));
+    const usuarioEncontrado = usuarios.find(u => u.username === username);
+
+    if (!usuarioEncontrado) {
+      return res.status(404).json({ mensagem: "Nome de usuário não encontrado." });
+    }
+
+    // Gera um token aleatório numérico de 6 dígitos
+    const tokenSeguro = Math.floor(100000 + Math.random() * 900000);
+    tokensRecuperacaoMemoria[username] = String(tokenSeguro);
+
+    // Cria o link relativo e dinâmico
+    const linkRedefinir = `redefinirSenha.html?username=${username}&token=${tokenSeguro}`;
+
+    // Enviamos o link direto para a interface do cliente
+    res.status(200).json({ 
+      mensagem: "Token emitido com sucesso.",
+      link: linkRedefinir 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensagem: "Erro interno ao processar a solicitação." });
+  }
+});
+
+// Rota 2: Validar o token de memória e gravar a nova senha no JSON encriptada com bcrypt
+app.post('/users/redefinir-senha', async (req, res) => {
+  try {
+    const { username, token, novaSenha } = req.body;
+    const caminhoContas = path.join(__dirname, "./Data/users.json");
+
+    if (!tokensRecuperacaoMemoria[username] || tokensRecuperacaoMemoria[username] !== String(token)) {
+      return res.status(400).json({ mensagem: "Token de segurança inválido, expirado ou corrompido." });
+    }
+
+    let usuarios = JSON.parse(fs.readFileSync(caminhoContas, 'utf8'));
+    const index = usuarios.findIndex(u => u.username === username);
+
+    if (index !== -1) {
+      usuarios[index].password = await bcrypt.hash(novaSenha, 10); 
+      fs.writeFileSync(caminhoContas, JSON.stringify(usuarios, null, 2));
+      delete tokensRecuperacaoMemoria[username]; 
+      return res.status(200).json({ mensagem: "Senha redefinida com total sucesso!" });
+    }
+
+    res.status(404).json({ mensagem: "Usuário não localizado durante a gravação." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensagem: "Erro no servidor ao salvar a nova credencial." });
   }
 });
 
