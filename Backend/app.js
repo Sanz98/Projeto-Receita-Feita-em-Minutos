@@ -4,7 +4,6 @@ const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
 require("dotenv").config();
-const ngrok = require("ngrok"); // <-- IMPORTAÇÃO DO NGROK ADICIONADA AQUI
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -21,6 +20,7 @@ app.use(express.json());
 
 // A linha mágica do Frontend
 app.use(express.static(path.join(__dirname, '../FrontEnd/Body')));
+app.use(express.static(path.join(__dirname, '../FrontEnd'))); // <-- Linha adicionada para corrigir o erro do /register.html
 
 // ==========================================
 // IMPORTAR E USAR AS ROTAS ORGANIZADAS
@@ -192,7 +192,7 @@ app.put('/perfil/senha', (req, res) => {
     }
     res.status(404).json({ mensagem: "Usuário não encontrado." });
   } catch (error) {
-    res.status(500).json({ mensagem: "Erro no servidor ao alterar senha." });
+    res.status(500).json({ serverMessage: "Erro no servidor ao alterar senha." });
   }
 });
 
@@ -233,20 +233,8 @@ app.delete('/perfil', (req, res) => {
 });
 
 // ==========================================
+// INICIAR SERVIDOR
 // ==========================================
-// INICIAR SERVIDOR & NGROK
-// ==========================================
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Servidor rodando localmente em http://localhost:${PORT}`);
-
-  try {
-    // Inicia o túnel do ngrok usando a porta e o token do .env
-    const url = await ngrok.connect({
-      addr: PORT,
-      authtoken: process.env.NGROK_AUTHTOKEN 
-    });
-    console.log(`🌐 URL Pública do ngrok: ${url}`);
-  } catch (error) {
-    console.error("⚠️ Erro ao iniciar o ngrok:", error.message);
-  }
 });
