@@ -3,6 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
+const bcrypt = require("bcrypt"); // CORREÇÃO 1: Importação do bcrypt adicionada
 require("dotenv").config();
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
@@ -18,9 +19,18 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 app.use(cors());
 app.use(express.json());
 
-// A linha mágica do Frontend
-app.use(express.static(path.join(__dirname, '../FrontEnd/Body')));
-app.use(express.static(path.join(__dirname, '../FrontEnd'))); // <-- Linha adicionada para corrigir o erro do /register.html
+// ==========================================
+// SERVIR ARQUIVOS ESTÁTICOS DO FRONTEND
+// ==========================================
+// Lê a pasta onde estão o index.html e login.html
+app.use(express.static(path.join(__dirname, "../FrontEnd/Body")));
+// Lê a pasta onde está o register.html atualmente
+app.use(express.static(path.join(__dirname, "../FrontEnd")));
+
+// ROTA RAIZ: Abre o index.html automaticamente ao aceder a http://localhost:3000
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../FrontEnd/Body/index.html'));
+});
 
 // ==========================================
 // IMPORTAR E USAR AS ROTAS ORGANIZADAS
@@ -41,17 +51,14 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(400).json({ mensagem: "Por favor, forneça um link válido para a extração." });
     }
 
-    // Validação preventiva para garantir que a chave da API está configurada
     if (!process.env.GEMINI_API_KEY) {
       console.error("Erro: Variável GEMINI_API_KEY não configurada no arquivo .env");
       return res.status(500).json({ mensagem: "Chave de API da Inteligência Artificial não configurada no servidor." });
     }
 
-    // --- ENGENHARIA DE CONTEXTO: BUSCAR O TÍTULO REAL DIRETAMENTE NO YOUTUBE ---
     let tituloRealDoVideo = "";
     try {
       if (link.includes("youtu")) {
-        // Consulta a API pública do YouTube para capturar o título do vídeo sem precisar de chaves extras
         const urlMetadados = `https://www.youtube.com/oembed?url=${encodeURIComponent(link)}&format=json`;
         const respostaMetadados = await fetch(urlMetadados);
         
@@ -64,15 +71,12 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Aviso: Não foi possível ler o título via oEmbed, o Gemini tentará deduzir em modo global.");
     }
 
-    // Instancia o modelo estável mais recente do ecossistema Gemini (gemini-2.5-flash)
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // Se encontramos o título do vídeo, nós o injetamos no contexto do prompt com prioridade máxima
     const contextoTitulo = tituloRealDoVideo 
       ? `O título real deste vídeo no YouTube é: "${tituloRealDoVideo}". Use este título como base absoluta para dar nome ao prato.` 
       : "";
 
-    // Engenharia de prompt detalhada para instruir a resposta pura em JSON
     const prompt = `Você é um engenheiro de dados e assistente culinário especializado em estruturação de dados.
     Analise o seguinte link de receita: "${link}".
     ${contextoTitulo}
@@ -82,25 +86,18 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     
     Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicionativo:
     {
-      "nome": "Nome Correto da Receita Encontrada",
+      "nome": "Nome Correcto da Receita Encontrada",
       "ingredientes": "ingrediente um, ingrediente dois, ingrediente três"
     }`;
 
-    // Dispara a requisição assíncrona para os servidores do Google AI
     const resultado = await model.generateContent(prompt);
     let textoResposta = resultado.response.text().trim();
 
-    // === INÍCIO DO BLOCO DE LIMPEZA AVANÇADA ===
-    // Limpa de forma cirúrgica caso o modelo retorne crases de Markdown involuntariamente
     if (textoResposta.startsWith("```")) {
       textoResposta = textoResposta.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
     }
-    // === FIM DO BLOCO DE LIMPEZA AVANÇADA ===
     
-    // Converte o texto plano retornado em um objeto literal válido do JavaScript
     const dadosFormatados = JSON.parse(textoResposta);
-
-    // Devolve os dados estruturados reais da receita para o Frontend
     res.status(200).json(dadosFormatados);
 
   } catch (error) {
@@ -168,7 +165,7 @@ const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
 const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
 
 // Alterar Senha do Usuário logado
-app.put('/perfil/senha', (req, res) => {
+app.put('/perfil/senha', async (req, res) => { // CORREÇÃO 2: Adicionado async para suportar criptografia síncrona
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
@@ -182,17 +179,23 @@ app.put('/perfil/senha', (req, res) => {
       const index = usuarios.findIndex(u => String(u.id) === String(usuarioLogado.id));
 
       if (index !== -1) {
-        if (usuarios[index].password !== senhaAtual) {
-          return res.status(400).json({ message: "A senha atual está incorreta." });
+        // CORREÇÃO 3: Comparar de forma segura usando bcrypt contra o hash salvo na base de dados
+        const senhaValida = await bcrypt.compare(senhaAtual, usuarios[index].password);
+        if (!senhaValida) {
+          return res.status(400).json({ mensagem: "A senha atual está incorreta." }); // Alinhado para 'mensagem'
         }
-        usuarios[index].password = novaSenha;
+        
+        // CORREÇÃO 4: Encriptar a nova senha antes de salvar de modo a manter a segurança do login
+        usuarios[index].password = await bcrypt.hash(novaSenha, 10);
+        
         fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
         return res.status(200).json({ mensagem: "Senha alterada com sucesso!" });
       }
     }
     res.status(404).json({ mensagem: "Usuário não encontrado." });
   } catch (error) {
-    res.status(500).json({ serverMessage: "Erro no servidor ao alterar senha." });
+    console.error("Erro ao alterar senha no backend:", error);
+    res.status(500).json({ mensagem: "Erro no servidor ao alterar senha." });
   }
 });
 
@@ -205,21 +208,18 @@ app.delete('/perfil', (req, res) => {
     const token = authHeader.split(" ")[1];
     const usuarioLogado = jwt.verify(token, SECRET);
 
-    // 1. Remover do arquivo de Usuários
     if (fs.existsSync(caminhoUsuarios)) {
       let usuarios = JSON.parse(fs.readFileSync(caminhoUsuarios, 'utf8'));
       usuarios = usuarios.filter(u => String(u.id) !== String(usuarioLogado.id));
       fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
     }
 
-    // 2. Remover do arquivo de Receitas
     if (fs.existsSync(caminhoReceitas)) {
       let receitas = JSON.parse(fs.readFileSync(caminhoReceitas, 'utf8'));
       receitas = receitas.filter(r => String(r.userId) !== String(usuarioLogado.id));
       fs.writeFileSync(caminhoReceitas, JSON.stringify(receitas, null, 2));
     }
 
-    // 3. Remover do arquivo de Avaliações
     if (fs.existsSync(caminhoAvaliacoes)) {
       let avaliacoes = JSON.parse(fs.readFileSync(caminhoAvaliacoes, 'utf8'));
       avaliacoes = avaliacoes.filter(av => String(av.userId) !== String(usuarioLogado.id));
@@ -235,6 +235,4 @@ app.delete('/perfil', (req, res) => {
 // ==========================================
 // INICIAR SERVIDOR
 // ==========================================
-app.listen(PORT, () => {
-  console.log(`Servidor rodando localmente em http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
