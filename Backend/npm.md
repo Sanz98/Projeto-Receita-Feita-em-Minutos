@@ -23,3 +23,8 @@ Para permitir que o projeto rode corretamente em sua máquina (ou em qualquer m�
     ```powershell
    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
     ```
+
+
+### Instalando versão atualizada 
+
+npm install @google/generative-ai@latest
