@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
 const bcrypt = require("bcrypt"); 
-require("dotenv").config();
+require('dotenv').config();
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.JWT_SECRET || "minha_chave_secreta_para_gerar_tokens_12345"; 
 
-// Inicializa o motor do Gemini utilizando a chave de API guardada no ambiente seguro (.env)
+// 🔥 TESTE DE FOGO: Cole a sua chave nova gerada no Google AI Studio exatamente dentro das aspas abaixo!
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 app.use(cors());
@@ -51,11 +51,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(400).json({ mensagem: "Por favor, forneça um link válido para a extração." });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("Erro: Variável GEMINI_API_KEY não configurada no arquivo .env");
-      return res.status(500).json({ mensagem: "Chave de API da Inteligência Artificial não configurada no servidor." });
-    }
-
     let tituloRealDoVideo = "";
     try {
       if (link.includes("youtu")) {
@@ -71,6 +66,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Aviso: Não foi possível ler o título via oEmbed, o Gemini tentará deduzir em modo global.");
     }
 
+    // Usando o modelo que sabemos que sua chave e biblioteca suportam perfeitamente
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const contextoTitulo = tituloRealDoVideo 
@@ -231,9 +227,8 @@ app.delete('/perfil', (req, res) => {
 // ==========================================
 // ROTAS PÚBLICAS: FLUXO DE RECUPERAÇÃO DE SENHA (NÃO EXIGEM TOKEN)
 // ==========================================
-let tokensRecuperacaoMemoria = {}; // Armazena temporariamente os tokens na memória viva
+let tokensRecuperacaoMemoria = {}; 
 
-// Rota 1: Validar usuário e devolver o link gerado para o Frontend
 app.post('/users/esqueci-senha', (req, res) => {
   try {
     const { username } = req.body;
@@ -250,14 +245,11 @@ app.post('/users/esqueci-senha', (req, res) => {
       return res.status(404).json({ mensagem: "Nome de usuário não encontrado." });
     }
 
-    // Gera um token aleatório numérico de 6 dígitos
     const tokenSeguro = Math.floor(100000 + Math.random() * 900000);
     tokensRecuperacaoMemoria[username] = String(tokenSeguro);
 
-    // Cria o link relativo e dinâmico
     const linkRedefinir = `redefinirSenha.html?username=${username}&token=${tokenSeguro}`;
 
-    // Enviamos o link direto para a interface do cliente
     res.status(200).json({ 
       mensagem: "Token emitido com sucesso.",
       link: linkRedefinir 
@@ -268,7 +260,6 @@ app.post('/users/esqueci-senha', (req, res) => {
   }
 });
 
-// Rota 2: Validar o token de memória e gravar a nova senha no JSON encriptada com bcrypt
 app.post('/users/redefinir-senha', async (req, res) => {
   try {
     const { username, token, novaSenha } = req.body;

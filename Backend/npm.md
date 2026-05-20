@@ -28,3 +28,7 @@ Para permitir que o projeto rode corretamente em sua máquina (ou em qualquer m�
 ### Instalando versão atualizada 
 
 npm install @google/generative-ai@latest
+
+### Extração do link via app.js
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
