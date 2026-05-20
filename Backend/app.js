@@ -71,7 +71,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Aviso: Não foi possível ler o título via oEmbed, o Gemini tentará deduzir em modo global.");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const contextoTitulo = tituloRealDoVideo 
       ? `O título real deste vídeo no YouTube é: "${tituloRealDoVideo}". Use este título como base absoluta para dar nome ao prato.` 

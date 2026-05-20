@@ -99,7 +99,17 @@ function navegar(idPagina, btnElement) {
 // ==========================================
 async function carregar() {
   try {
-    const res = await fetch(API);
+    // Agora o Front-end envia o token para o Back-end
+    const res = await fetch(API, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      sair(); 
+      return;
+    }
+
     receitasGlobais = await res.json();
     const lista = document.getElementById("lista");
     if (!lista) return;
@@ -162,7 +172,6 @@ async function criarReceita() {
   btnExtrair.disabled = true;
 
   try {
-    // 1. Faz a chamada HTTP POST para a rota de IA usando o baseUrl dinâmico
     const respostaIA = await fetch(`${baseUrl}/receitas/extrair-ia`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,14 +183,12 @@ async function criarReceita() {
       throw new Error(erroDados.mensagem || "A Inteligência Artificial falhou ao analisar este link.");
     }
 
-    // Recebe o objeto estruturado { nome, ingredientes } processado pelo Gemini API
     const dadosExtraidos = await respostaIA.json(); 
     
     const nome = dadosExtraidos.nome || "Receita Extraída por IA";
     const ingredientes = dadosExtraidos.ingredientes || "Ingredientes não catalogados";
     const urlImagemGerada = gerarImagemReceita(nome, linkOriginal);
 
-    // 2. Persiste a receita real gerada pela IA no nosso banco de dados JSON nativo do servidor
     const res = await fetch(API, {
       method: "POST",
       headers: { 
@@ -238,7 +245,7 @@ async function deletar(id) {
       alert("Receita excluída com sucesso do banco de dados!");
       carregar(); 
     } else {
-      alert("Erro de Autorização: Seu login expirou. Por favor, saia e faça login novamente.");
+      alert("Erro de Autorização: O teu login expirou ou não tens permissão.");
     }
   } catch (error) {
     console.error("Erro ao deletar receita:", error);
@@ -542,7 +549,14 @@ function carregarPedidosShopper() {
 // ==========================================
 async function carregarHistorico() {
   try {
-    const res = await fetch(API);
+    // Também enviamos o Token na visualização do histórico
+    const res = await fetch(API, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+    
+    if (!res.ok) return;
+
     const data = await res.json();
     const lista = document.getElementById("lista-historico");
     if (!lista) return;
@@ -659,7 +673,6 @@ async function alterarSenha() {
   if (novaSenha.length < 6) return alert("A nova palavra-passe deve ter pelo menos 6 caracteres.");
 
   try {
-    // Usar a variável baseUrl em vez do localhost fixo
     const res = await fetch(`${baseUrl}/perfil/senha`, {
       method: "PUT",
       headers: {
@@ -686,7 +699,6 @@ async function excluirConta() {
   if (!confirmacao) return;
 
   try {
-    // Usar a variável baseUrl em vez do localhost fixo
     const res = await fetch(`${baseUrl}/perfil`, {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
@@ -704,3 +716,6 @@ async function excluirConta() {
     alert("Erro de ligação com o servidor.");
   }
 }
+
+// Inicialização automática
+carregar();
