@@ -9,8 +9,17 @@ function sair() {
   window.location.href = 'login.html';
 }
 
-// CORREÇÃO 1: Rota relativa para as receitas!
-const API = "/receitas";
+// 🧠 Lógica Inteligente para o telemóvel (ngrok) e computador (Live Server)
+let baseUrl = '';
+const host = window.location.hostname;
+if (host === '127.0.0.1' || host === 'localhost' || window.location.protocol === 'file:') {
+    if(window.location.port !== '3000') {
+        baseUrl = 'http://localhost:3000';
+    }
+}
+
+// Em vez de localhost, a API vai adaptar-se automaticamente
+const API = `${baseUrl}/receitas`;
 let receitasGlobais = [];
 let itensParaComprarGlobal = []; 
 
@@ -90,7 +99,17 @@ function navegar(idPagina, btnElement) {
 // ==========================================
 async function carregar() {
   try {
-    const res = await fetch(API);
+    // Agora o Front-end envia o token para o Back-end
+    const res = await fetch(API, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      sair(); 
+      return;
+    }
+
     receitasGlobais = await res.json();
     const lista = document.getElementById("lista");
     if (!lista) return;
@@ -145,6 +164,7 @@ async function criarReceita() {
     return alert("Por favor, cole um link válido para extrair a receita!");
   }
 
+  // --- INÍCIO DO EFEITO VISUAL DE LOADING ---
   const textoOriginal = btnExtrair.innerText;
   btnExtrair.innerText = "Processando IA... 🤖";
   btnExtrair.style.opacity = "0.7";
@@ -152,8 +172,7 @@ async function criarReceita() {
   btnExtrair.disabled = true;
 
   try {
-    // CORREÇÃO 2: Rota relativa para a extração via Gemini!
-    const respostaIA = await fetch("/receitas/extrair-ia", {
+    const respostaIA = await fetch(`${baseUrl}/receitas/extrair-ia`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ link: linkOriginal })
@@ -201,6 +220,7 @@ async function criarReceita() {
     console.error("Erro no fluxo de execução de IA:", error);
     alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
   } finally {
+    // --- FIM DO EFEITO DE LOADING ---
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
     btnExtrair.style.cursor = "pointer";
@@ -225,7 +245,7 @@ async function deletar(id) {
       alert("Receita excluída com sucesso do banco de dados!");
       carregar(); 
     } else {
-      alert("Erro de Autorização: Seu login expirou. Por favor, saia e faça login novamente.");
+      alert("Erro de Autorização: O teu login expirou ou não tens permissão.");
     }
   } catch (error) {
     console.error("Erro ao deletar receita:", error);
@@ -529,7 +549,14 @@ function carregarPedidosShopper() {
 // ==========================================
 async function carregarHistorico() {
   try {
-    const res = await fetch(API);
+    // Também enviamos o Token na visualização do histórico
+    const res = await fetch(API, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+    
+    if (!res.ok) return;
+
     const data = await res.json();
     const lista = document.getElementById("lista-historico");
     if (!lista) return;
@@ -594,8 +621,7 @@ async function enviarAvaliacao() {
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
 
   try {
-    // CORREÇÃO 3: Rota relativa para as avaliações!
-    const res = await fetch("/avaliacoes", {
+    const res = await fetch(`${baseUrl}/avaliacoes`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -643,12 +669,11 @@ async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
 
-  if (!senhaAtual || !novaSenha) return alert("Preencha a senha atual e a nova senha!");
-  if (novaSenha.length < 6) return alert("A nova senha deve ter pelo menos 6 caracteres.");
+  if (!senhaAtual || !novaSenha) return alert("Preencha a palavra-passe atual e a nova!");
+  if (novaSenha.length < 6) return alert("A nova palavra-passe deve ter pelo menos 6 caracteres.");
 
   try {
-    // CORREÇÃO 4: Rota relativa para atualizar a senha!
-    const res = await fetch("/perfil/senha", {
+    const res = await fetch(`${baseUrl}/perfil/senha`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -665,17 +690,16 @@ async function alterarSenha() {
       document.getElementById("nova-senha").value = "";
     }
   } catch (error) {
-    alert("Erro de conexão com o servidor ao alterar senha.");
+    alert("Erro de ligação com o servidor ao alterar a palavra-passe.");
   }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem a certeza absoluta de que deseja excluir a sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
-    // CORREÇÃO 5: Rota relativa para excluir o perfil!
-    const res = await fetch("/perfil", {
+    const res = await fetch(`${baseUrl}/perfil`, {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });
@@ -689,7 +713,7 @@ async function excluirConta() {
       alert(dados.mensagem || "Erro ao excluir conta.");
     }
   } catch (error) {
-    alert("Erro de conexão com o servidor.");
+    alert("Erro de ligação com o servidor.");
   }
 }
 
