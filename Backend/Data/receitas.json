@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": "1779286160161",
+    "userId": "2",
+    "nome": "PASTEL SEQUINHO MAIS SABOROSO DO MUNDO MUITO FÁCIL",
+    "ingredientes": "500g de farinha de trigo, 250g de margarina gelada, 150ml de água gelada, 1 colher de chá de sal (para a massa), 300g de carne moída, 1 cebola média picada, 2 dentes de alho amassados, 2 colheres de sopa de azeite, sal a gosto (para o recheio), pimenta do reino a gosto, salsinha picada a gosto, cebolinha picada a gosto, 200g de queijo muçarela ralado, óleo vegetal para fritar",
+    "link": "https://youtu.be/pPtclbShAlM?si=k8dnTVr1rCQOomEv",
+    "imagem": "https://img.youtube.com/vi/pPtclbShAlM/hqdefault.jpg"
+  },
+  {
+    "id": "1779286201098",
+    "userId": "2",
+    "nome": "Bolo Brigadeiro Cremoso",
+    "ingredientes": "Ovos, Açúcar, Farinha de trigo, Chocolate em pó, Fermento químico em pó, Água, Óleo, Leite condensado, Creme de leite, Manteiga, Sal, Granulado de chocolate",
+    "link": "https://youtu.be/ihVmEHDjVfM?si=a-etLfMqad_xQf-s",
+    "imagem": "https://img.youtube.com/vi/ihVmEHDjVfM/hqdefault.jpg"
+  }
+]
