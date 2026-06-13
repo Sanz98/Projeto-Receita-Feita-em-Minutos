@@ -47,7 +47,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     const { link } = req.body;
     if (!link) return res.status(400).json({ mensagem: "Por favor, forneça um link válido." });
 
-    // 1. CAMADA DE CACHE: Verificar se já existe no banco
+    // 1. CAMADA DE CACHE: Verificar se já existe na base de dados
     const receitaExistente = await Receita.findOne({ link: link });
     if (receitaExistente) {
       return res.status(200).json({ 
@@ -84,7 +84,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // 4. CAMADA DE IA (Groq Cloud com Llama 3)
+    // 4. CAMADA DE IA (Groq Cloud com Llama 3.1 atualizado)
     const prompt = `Você é um assistente culinário. Extraia o nome e os ingredientes do seguinte link/contexto.
     Link: ${link}
     Legenda extraída (se houver): ${contextoAdicional}
@@ -94,7 +94,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama3-8b-8192", // Modelo incrivelmente rápido e com cota generosa
+      // ATUALIZADO AQUI: Novo modelo ativo e suportado da Groq
+      model: "llama-3.1-8b-instant", 
       temperature: 0.2,
     });
 
