@@ -21,8 +21,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.error('❌ Erro ao conectar ao MongoDB:', err));
 
 // 🔥 TESTE DE FOGO: Cole a sua chave nova gerada no Google AI Studio exatamente dentro das aspas abaixo!
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyAIcb4Xw4YwwgBqdCiTU327m_-PVh_ndio");
-
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.use(cors());
 app.use(express.json());
 
