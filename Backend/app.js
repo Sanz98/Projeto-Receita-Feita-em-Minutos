@@ -84,24 +84,39 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // 4. CAMADA DE IA (Groq Cloud com Llama 3.1 atualizado)
-    const prompt = `Você é um assistente culinário. Extraia o nome e os ingredientes do seguinte link/contexto.
+    // 4. CAMADA DE IA (Groq Cloud) - PROMPT FORTALECIDO
+    const prompt = `Você é um assistente culinário. Analise o seguinte contexto e extraia a receita.
     Link: ${link}
     Legenda extraída (se houver): ${contextoAdicional}
     
-    Regra: Formate os ingredientes numa única linha, separados por vírgula.
-    Responda OBRIGATORIAMENTE em JSON puro: {"nome": "Nome da Receita", "ingredientes": "ingrediente 1, ingrediente 2"}`;
+    REGRAS ABSOLUTAS:
+    1. Formate os ingredientes numa única linha, separados por vírgula.
+    2. Responda EXCLUSIVAMENTE com um objeto JSON válido. Nenhuma palavra a mais antes ou depois.
+    3. Se não houver contexto suficiente para deduzir os ingredientes, devolva este JSON: {"nome": "Receita não identificada", "ingredientes": "Não foi possível extrair a receita deste link. Verifique se o vídeo possui instruções claras."}
+    
+    Responda apenas com o JSON:`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      // ATUALIZADO AQUI: Novo modelo ativo e suportado da Groq
       model: "llama-3.1-8b-instant", 
-      temperature: 0.2,
+      temperature: 0.1, // Temperatura baixa para respostas robóticas/estritas
     });
 
     let textoResposta = chatCompletion.choices[0]?.message?.content || "";
     textoResposta = textoResposta.replace(/```json|```/g, '').trim();
-    const dadosFormatados = JSON.parse(textoResposta);
+    
+    // PROTEÇÃO ANTI-CRASH (Try/Catch apenas no JSON.parse)
+    let dadosFormatados;
+    try {
+      dadosFormatados = JSON.parse(textoResposta);
+    } catch (parseError) {
+      console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
+      // Se falhar o parse, em vez do servidor crashar, enviamos um resultado padrão:
+      dadosFormatados = {
+        nome: "Receita Desconhecida",
+        ingredientes: "Não conseguimos extrair as informações. O link não contém texto legível ou legenda pública."
+      };
+    }
     
     res.status(200).json(dadosFormatados);
 
