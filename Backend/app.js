@@ -4,7 +4,6 @@ const path = require("path");
 const jwt = require("jsonwebtoken"); 
 const bcrypt = require("bcrypt"); 
 const mongoose = require("mongoose");
-const scraper = require('recipe-scrapers').default; // Biblioteca de extração automática
 require('dotenv').config();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -58,7 +57,10 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
     // 2. CAMADA DE SCRAPER: Tentar extração automática (Zero Custo)
     try {
+      // Carregamento dinâmico (resolve o erro de importação)
+      const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
+      
       return res.status(200).json({ 
         nome: data.title, 
         ingredientes: data.ingredients.join(', '),
@@ -70,7 +72,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
     // 3. CAMADA DE IA: Gemini (Apenas se o scraper falhar)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `Extraia o nome e ingredientes deste link: ${link}. Responda em JSON puro: {"nome": "...", "ingredientes": "..."}`;
+    const prompt = `Analise este link: ${link}. Extraia o nome e ingredientes. Responda em JSON puro: {"nome": "...", "ingredientes": "..."}`;
     
     const resultado = await model.generateContent(prompt);
     let textoResposta = resultado.response.text().replace(/```json|```/g, '').trim();
@@ -81,13 +83,13 @@ app.post('/receitas/extrair-ia', async (req, res) => {
   } catch (error) {
     console.error("Erro crítico na integração:", error);
 
-    // TRATAMENTO DE ERROS DE QUOTA E SERVIÇO
+    // TRATAMENTO DE ERROS
     if (error.status === 429) {
       res.status(429).json({ mensagem: "Limite diário de IA atingido. Tente novamente amanhã." });
     } else if (error.status === 503) {
-      res.status(503).json({ mensagem: "Serviço da IA ocupado. Tente novamente em alguns instantes." });
+      res.status(503).json({ mensagem: "Serviço da IA ocupado." });
     } else {
-      res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita." });
+      res.status(500).json({ mensagem: "Erro interno no servidor." });
     }
   }
 });
