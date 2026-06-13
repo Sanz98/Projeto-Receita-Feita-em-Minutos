@@ -79,6 +79,57 @@ async function carregar() {
   }
 }
 
+async function criarReceita() {
+  const linkInput = document.getElementById("input-link");
+  const linkOriginal = linkInput ? linkInput.value.trim() : ""; 
+  const btnExtrair = document.querySelector("#home .form .btn-primary");
+
+  if (!linkOriginal) return alert("Por favor, cole um link válido!");
+
+  const textoOriginal = btnExtrair.innerText;
+  btnExtrair.innerText = "Processando IA... 🤖";
+  btnExtrair.disabled = true;
+
+  try {
+    const respostaIA = await fetch(`${baseUrl}/receitas/extrair-ia`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ link: linkOriginal })
+    });
+
+    if (!respostaIA.ok) {
+        const erroDados = await respostaIA.json();
+        // Lançar o erro com o status para capturarmos no catch
+        throw new Error(`${respostaIA.status}: ${erroDados.mensagem || "Erro na IA"}`);
+    }
+
+    const dadosExtraidos = await respostaIA.json();
+    // ... lógica de gravação após sucesso ...
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+      body: JSON.stringify({ nome: dadosExtraidos.nome, ingredientes: dadosExtraidos.ingredientes, link: linkOriginal })
+    });
+    
+    if (res.ok) { await carregar(); alert("Receita criada!"); }
+
+  } catch (error) {
+    console.error("Erro no fluxo de IA:", error);
+    
+    // MENSAGENS DE ERRO ESPECÍFICAS
+    if (error.message.includes("429")) {
+        alert("Limite diário de IA atingido. Tente novamente amanhã.");
+    } else if (error.message.includes("503")) {
+        alert("Serviço da IA ocupado. Tente novamente em alguns instantes.");
+    } else {
+        alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
+    }
+  } finally {
+    btnExtrair.innerText = textoOriginal;
+    btnExtrair.disabled = false;
+  }
+}
+
 async function deletar(id) {
   if (!confirm("Tem certeza que deseja excluir esta receita?")) return; 
   try {
@@ -86,7 +137,8 @@ async function deletar(id) {
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });
-    if (res.ok) { carregar(); } else { alert("Erro ao excluir."); }
+    const dados = await res.json();
+    if (res.ok) { alert("Receita excluída!"); carregar(); } else { alert("Erro: " + (dados.mensagem || "Erro desconhecido")); }
   } catch (error) {
     alert("Erro de conexão.");
   }
@@ -102,6 +154,8 @@ function abrirEditarReceita(id) {
   document.getElementById("modal-editar").style.display = "flex";
 }
 
+function fecharModalEditar() { document.getElementById("modal-editar").style.display = "none"; }
+
 async function salvarEdicaoReceita(id, imagemOriginal) {
   const nome = document.getElementById("edit-nome").value.trim();
   const link = document.getElementById("edit-link").value.trim();
@@ -112,7 +166,7 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
       body: JSON.stringify({ nome, link, ingredientes, imagem: imagemOriginal })
     });
-    if (res.ok) { document.getElementById("modal-editar").style.display = "none"; carregar(); }
+    if (res.ok) { fecharModalEditar(); carregar(); alert("Receita atualizada!"); }
   } catch (error) { console.error(error); }
 }
 
@@ -127,7 +181,8 @@ function verIngredientes(idDaReceita) {
 
 function navegar(idPagina, btnElement) {
   document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-  document.getElementById(idPagina).style.display = 'block';
+  const paginaAlvo = document.getElementById(idPagina);
+  if(paginaAlvo) paginaAlvo.style.display = 'block';
   if (btnElement) {
     document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
