@@ -4,9 +4,9 @@ const path = require("path");
 const jwt = require("jsonwebtoken"); 
 const bcrypt = require("bcrypt"); 
 const mongoose = require("mongoose");
+const { YoutubeTranscript } = require('youtube-transcript');
+const Groq = require("groq-sdk");
 require('dotenv').config();
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,7 +16,9 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado ao MongoDB Atlas com sucesso!'))
   .catch((err) => console.error('❌ Erro ao conectar ao MongoDB:', err));
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Inicializando o GROQ (Substituto ultra-rápido do Gemini)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 app.use(cors());
 app.use(express.json());
 
@@ -38,7 +40,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO (CACHE -> SCRAPER -> IA)
+// ROTA DE EXTRAÇÃO AVANÇADA (CACHE -> SCRAPER -> YOUTUBE -> GROQ IA)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -55,7 +57,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       });
     }
 
-    // 2. CAMADA DE SCRAPER: Tentar extração automática (Zero Custo)
+    // 2. CAMADA DE SCRAPER: Tentar extração automática de sites (Zero Custo)
     try {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
@@ -66,16 +68,38 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         origem: "scraper" 
       });
     } catch (scraperErr) {
-      console.log("Scraper não suporta este site, tentando IA...");
+      console.log("Scraper não suporta este site, a tentar extração por vídeo ou IA...");
     }
 
-    // 3. CAMADA DE IA: Gemini (Apenas se o scraper falhar)
-    // ALTERADO PARA gemini-2.5-flash - Versão suportada pela sua conta
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const prompt = `Analise este link: ${link}. Extraia o nome e ingredientes. Responda em JSON puro: {"nome": "...", "ingredientes": "..."}`;
+    // 3. CAMADA DE LEITURA DO YOUTUBE (Extração de Legendas Gratuita)
+    let contextoAdicional = "";
+    if (link.includes("youtube.com") || link.includes("youtu.be")) {
+      try {
+        const transcript = await YoutubeTranscript.fetchTranscript(link);
+        // Junta os textos da legenda e limita a 3000 caracteres para ser rápido
+        contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3000); 
+        console.log("Legenda do YouTube extraída com sucesso!");
+      } catch (err) {
+        console.log("Vídeo sem legenda disponível. A IA tentará deduzir.");
+      }
+    }
+
+    // 4. CAMADA DE IA (Groq Cloud com Llama 3)
+    const prompt = `Você é um assistente culinário. Extraia o nome e os ingredientes do seguinte link/contexto.
+    Link: ${link}
+    Legenda extraída (se houver): ${contextoAdicional}
     
-    const resultado = await model.generateContent(prompt);
-    let textoResposta = resultado.response.text().replace(/```json|```/g, '').trim();
+    Regra: Formate os ingredientes numa única linha, separados por vírgula.
+    Responda OBRIGATORIAMENTE em JSON puro: {"nome": "Nome da Receita", "ingredientes": "ingrediente 1, ingrediente 2"}`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama3-8b-8192", // Modelo incrivelmente rápido e com cota generosa
+      temperature: 0.2,
+    });
+
+    let textoResposta = chatCompletion.choices[0]?.message?.content || "";
+    textoResposta = textoResposta.replace(/```json|```/g, '').trim();
     const dadosFormatados = JSON.parse(textoResposta);
     
     res.status(200).json(dadosFormatados);
@@ -83,11 +107,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
   } catch (error) {
     console.error("Erro crítico na integração:", error);
 
-    // TRATAMENTO DE ERROS
     if (error.status === 429) {
-      res.status(429).json({ mensagem: "Limite diário de IA atingido. Tente novamente amanhã." });
-    } else if (error.status === 503) {
-      res.status(503).json({ mensagem: "Serviço da IA ocupado." });
+      res.status(429).json({ mensagem: "Muitos pedidos realizados num curto espaço de tempo. Aguarde um instante." });
     } else {
       res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita." });
     }
