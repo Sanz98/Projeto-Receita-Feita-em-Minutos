@@ -57,7 +57,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
     // 2. CAMADA DE SCRAPER: Tentar extração automática (Zero Custo)
     try {
-      // Carregamento dinâmico (resolve o erro de importação)
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
       
@@ -71,7 +70,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     }
 
     // 3. CAMADA DE IA: Gemini (Apenas se o scraper falhar)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // ALTERADO PARA gemini-1.5-flash-latest PARA EVITAR ERRO 404
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const prompt = `Analise este link: ${link}. Extraia o nome e ingredientes. Responda em JSON puro: {"nome": "...", "ingredientes": "..."}`;
     
     const resultado = await model.generateContent(prompt);
@@ -89,7 +89,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     } else if (error.status === 503) {
       res.status(503).json({ mensagem: "Serviço da IA ocupado." });
     } else {
-      res.status(500).json({ mensagem: "Erro interno no servidor." });
+      res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita." });
     }
   }
 });
