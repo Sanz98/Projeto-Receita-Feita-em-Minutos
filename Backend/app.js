@@ -216,4 +216,8 @@ app.post('/users/redefinir-senha', async (req, res) => {
   } catch (error) { res.status(500).json({ mensagem: "Erro no servidor." }); }
 });
 
-app.listen(PORT, () => console.log(`Servidor a correr em http://localhost:${PORT}`));
+// --- PEQUENA ALTERAÇÃO FEITA AQUI PARA FORÇAR O GIT A DETETAR ---
+app.listen(PORT, () => {
+  console.log(`Servidor a correr em http://localhost:${PORT}`);
+  console.log("✅ Sistema atualizado com proteção anti-crash e modelo Groq Llama 3.1!");
+});
