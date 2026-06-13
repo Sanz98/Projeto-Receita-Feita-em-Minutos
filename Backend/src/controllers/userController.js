@@ -54,7 +54,6 @@ async function login(req, res) {
             return res.status(401).json({ mensagem: "Credenciais inválidas." });
         }
 
-        // Criamos o token passando o _id do MongoDB para a propriedade "id"
         const token = jwt.sign({ id: String(usuario._id), username: usuario.username }, SECRET, { expiresIn: '1h' });
         
         res.status(200).json({ mensagem: "Login bem-sucedido!", token, username: usuario.username });
