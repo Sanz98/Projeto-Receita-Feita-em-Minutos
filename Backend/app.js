@@ -70,8 +70,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     }
 
     // 3. CAMADA DE IA: Gemini (Apenas se o scraper falhar)
-    // ALTERADO PARA gemini-1.5-flash-latest PARA EVITAR ERRO 404
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    // ALTERADO PARA gemini-2.5-flash - Versão suportada pela sua conta
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Analise este link: ${link}. Extraia o nome e ingredientes. Responda em JSON puro: {"nome": "...", "ingredientes": "..."}`;
     
     const resultado = await model.generateContent(prompt);
