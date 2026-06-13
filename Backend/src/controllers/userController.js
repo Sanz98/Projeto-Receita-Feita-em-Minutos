@@ -1,123 +1,99 @@
-const fs = require("fs");
+const User = require('../../models/User');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const crypto = require('crypto');
-const path = require('path');
+require("dotenv").config();
 
-const caminho = path.join(__dirname, '../../Data/users.json');
 const SECRET = process.env.JWT_SECRET || "minha_chave_secreta_para_gerar_tokens_12345";
 
-// Função para ler a base de dados com proteção contra ficheiros corrompidos
-const lerUsuarios = () => {
+// LER UTILIZADORES (GET)
+async function listar(req, res) {
     try {
-        if (!fs.existsSync(caminho)) return [];
-        const data = fs.readFileSync(caminho, 'utf8');
-        return data ? JSON.parse(data) : [];
+        const usuarios = await User.find({}, 'username'); 
+        res.status(200).json(usuarios);
     } catch (error) {
-        console.error("⚠️ Erro ao ler users.json (o ficheiro pode estar corrompido):", error.message);
-        return []; // Se o ficheiro estiver estragado ou vazio, assume uma lista vazia para evitar que o servidor vá abaixo
-    }
-};
-
-// Função para guardar na base de dados
-const salvarUsuarios = (dados) => fs.writeFileSync(caminho, JSON.stringify(dados, null, 2));
-
-// 🔹 LER USUÁRIOS (GET)
-function listar(req, res) {
-    try {
-        const usuarios = lerUsuarios();
-        // Não envia a password para o Front-End por segurança
-        const listaSegura = usuarios.map(u => ({ id: u.id, username: u.username }));
-        res.status(200).json(listaSegura);
-    } catch (error) {
-        res.status(500).json({ mensagem: "Erro ao listar utilizadores." });
+        res.status(500).json({ mensagem: "Erro ao consultar a base de dados." });
     }
 }
 
-// 🔹 REGISTO (POST)
+// CRIAR UTILIZADOR (POST)
 async function register(req, res) {
     try {
         const { username, password } = req.body;
-        const usuarios = lerUsuarios();
 
-        // Verifica se o utilizador já existe (agora responde em JSON puro)
-        if (usuarios.find(u => u.username === username)) {
-            return res.status(400).json({ mensagem: "Este utilizador já existe." });
+        if (!username || !password) {
+            return res.status(400).json({ mensagem: "Preencha todos os campos." });
         }
 
-        // Lógica de ID Sequencial
-        let novoId = 1;
-        if (usuarios.length > 0) {
-            const maiorId = Math.max(...usuarios.map(u => Number(u.id) || 0));
-            novoId = maiorId + 1;
+        const existe = await User.findOne({ username });
+        if (existe) {
+            return res.status(400).json({ mensagem: "O utilizador já existe." });
         }
 
-        // Encriptar a password
-        const senhaHash = await bcrypt.hash(password, 10);
-        usuarios.push({ id: novoId.toString(), username, password: senhaHash });
-        salvarUsuarios(usuarios);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const novoUsuario = new User({ username, password: hashedPassword });
 
-        res.status(201).json({ mensagem: "Utilizador criado com sucesso!", id: novoId });
+        await novoUsuario.save();
+        res.status(201).json({ mensagem: "Utilizador registado com sucesso!" });
     } catch (error) {
-        console.error("🚨 Erro crítico no Backend (Registo):", error);
         res.status(500).json({ mensagem: "Erro interno ao registar utilizador." });
     }
 }
 
-// 🔹 LOGIN (POST)
+// LOGIN DE UTILIZADOR (POST)
 async function login(req, res) {
     try {
         const { username, password } = req.body;
-        const usuarios = lerUsuarios();
 
-        const user = usuarios.find(u => u.username === username);
-        if (!user) return res.status(401).json({ mensagem: "Utilizador não encontrado." });
+        const usuario = await User.findOne({ username });
+        if (!usuario) {
+            return res.status(401).json({ mensagem: "Credenciais inválidas." });
+        }
 
-        const senhaValida = await bcrypt.compare(password, user.password);
-        if (!senhaValida) return res.status(401).json({ mensagem: "Senha inválida." });
+        const isValid = await bcrypt.compare(password, usuario.password);
+        if (!isValid) {
+            return res.status(401).json({ mensagem: "Credenciais inválidas." });
+        }
 
-        const token = jwt.sign({ username: user.username, id: user.id }, SECRET, { expiresIn: "1h" });
-        res.json({ token, id: user.id, username: user.username });
+        // Criamos o token passando o _id do MongoDB para a propriedade "id"
+        const token = jwt.sign({ id: String(usuario._id), username: usuario.username }, SECRET, { expiresIn: '1h' });
+        
+        res.status(200).json({ mensagem: "Login bem-sucedido!", token, username: usuario.username });
     } catch (error) {
-        console.error("🚨 Erro crítico no Backend (Login):", error);
-        res.status(500).json({ mensagem: "Erro interno ao fazer login." });
+        res.status(500).json({ mensagem: "Erro interno durante o login." });
     }
 }
 
-// 🔹 ATUALIZAR USUÁRIO (PUT)
+// ATUALIZAR UTILIZADOR (PUT)
 async function atualizar(req, res) {
     try {
         const { id } = req.params;
         const { username, password } = req.body;
-        let usuarios = lerUsuarios();
 
-        let index = usuarios.findIndex(u => String(u.id) === String(id));
-        if (index === -1) return res.status(404).json({ mensagem: "Utilizador não encontrado." });
+        const usuario = await User.findById(id);
+        if (!usuario) {
+            return res.status(404).json({ mensagem: "Utilizador não encontrado." });
+        }
 
-        // Se enviar username, atualiza. Se enviar password, encripta a nova e atualiza.
-        if (username) usuarios[index].username = username;
-        if (password) usuarios[index].password = await bcrypt.hash(password, 10);
+        if (username) usuario.username = username;
+        if (password) usuario.password = await bcrypt.hash(password, 10);
 
-        salvarUsuarios(usuarios);
+        await usuario.save();
         res.status(200).json({ mensagem: "Utilizador atualizado com sucesso!" });
     } catch (error) {
         res.status(500).json({ mensagem: "Erro ao atualizar utilizador." });
     }
 }
 
-// 🔹 ELIMINAR USUÁRIO (DELETE)
-function deletar(req, res) {
+// ELIMINAR UTILIZADOR (DELETE)
+async function deletar(req, res) {
     try {
         const { id } = req.params;
-        let usuarios = lerUsuarios();
-        
-        const usuariosRestantes = usuarios.filter(u => String(u.id) !== String(id));
 
-        if (usuarios.length === usuariosRestantes.length) {
+        const resultado = await User.findByIdAndDelete(id);
+        if (!resultado) {
             return res.status(404).json({ mensagem: "Utilizador não encontrado." });
         }
 
-        salvarUsuarios(usuariosRestantes);
         res.status(200).json({ mensagem: "Utilizador eliminado com sucesso!" });
     } catch (error) {
         res.status(500).json({ mensagem: "Erro ao eliminar utilizador." });

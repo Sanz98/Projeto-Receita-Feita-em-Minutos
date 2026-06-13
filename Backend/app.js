@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken"); 
 const bcrypt = require("bcrypt"); 
+const mongoose = require("mongoose");
 require('dotenv').config();
 
 // Importação da biblioteca oficial da Inteligência Artificial do Google
@@ -13,21 +13,36 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.JWT_SECRET || "minha_chave_secreta_para_gerar_tokens_12345"; 
 
+// ==========================================
+// CONEXÃO COM O BANCO DE DADOS (MONGODB ATLAS)
+// ==========================================
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Conectado ao MongoDB Atlas com sucesso!'))
+  .catch((err) => console.error('❌ Erro ao conectar ao MongoDB:', err));
+
 // 🔥 TESTE DE FOGO: Cole a sua chave nova gerada no Google AI Studio exatamente dentro das aspas abaixo!
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyAIcb4Xw4YwwgBqdCiTU327m_-PVh_ndio");
 
 app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// SERVIR ARQUIVOS ESTÁTICOS DO FRONTEND
+// IMPORTAÇÃO DOS MODELOS DO BANCO DE DADOS
+// ==========================================
+// Certifique-se de que criou estes ficheiros na pasta Backend/models/
+const User = require('./models/User');
+const Receita = require('./models/Receita');
+const Avaliacao = require('./models/Avaliacao');
+
+// ==========================================
+// SERVIR FICHEIROS ESTÁTICOS DO FRONTEND
 // ==========================================
 // Lê a pasta onde estão o index.html e login.html
 app.use(express.static(path.join(__dirname, "../FrontEnd/Body")));
 // Lê a pasta onde está o register.html atualmente
 app.use(express.static(path.join(__dirname, "../FrontEnd")));
 
-// ROTA RAIZ: Abre o index.html automaticamente ao acessar http://localhost:3000
+// ROTA RAIZ: Abre o index.html automaticamente ao aceder a http://localhost:3000
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../FrontEnd/Body/index.html'));
 });
@@ -66,7 +81,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Aviso: Não foi possível ler o título via oEmbed, o Gemini tentará deduzir em modo global.");
     }
 
-    // Usando o modelo que sabemos que sua chave e biblioteca suportam perfeitamente
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const contextoTitulo = tituloRealDoVideo 
@@ -78,7 +92,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     ${contextoTitulo}
     
     Com base no contexto fornecido e no seu conhecimento enciclopédico sobre culinária, determine o nome correto do prato e extraia todos os ingredientes necessários para o preparo.
-    Regra de formatação de ingredientes: Formate todos os ingredientes em uma única linha de texto contínua, onde cada ingrediente é obrigatoriamente separado por uma vírgula simples (Exemplo: "3 ovos, 2 xícaras de açúcar, 1 colher de fermento").
+    Regra de formatação de ingredientes: Formate todos os ingredientes numa única linha de texto contínua, onde cada ingrediente é obrigatoriamente separado por uma vírgula simples (Exemplo: "3 ovos, 2 xícaras de açúcar, 1 colher de fermento").
     
     Responda OBRIGATORIAMENTE no formato JSON puro abaixo, sem formatação de bloco de código markdown (sem as três crases), sem a palavra 'json' e sem nenhum texto explicativo adicional:
     {
@@ -103,11 +117,9 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 });
 
 // ==========================================
-// ROTA: SISTEMA DE AVALIAÇÕES (VINCULADO AO USUÁRIO)
+// ROTA: SISTEMA DE AVALIAÇÕES (VINCULADO AO UTILIZADOR)
 // ==========================================
-const caminhoAvaliacoes = path.join(__dirname, "./Data/avaliacoes.json");
-
-app.post('/avaliacoes', (req, res) => {
+app.post('/avaliacoes', async (req, res) => {
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) return res.status(401).json({ mensagem: "Token não fornecido. Faça login." });
@@ -121,45 +133,39 @@ app.post('/avaliacoes', (req, res) => {
     }
 
     const { nota, comentario } = req.body;
-    let avaliacoes = [];
     
-    if (fs.existsSync(caminhoAvaliacoes)) {
-      const data = fs.readFileSync(caminhoAvaliacoes, 'utf8');
-      if (data) avaliacoes = JSON.parse(data);
-    }
-    
-    const indexAvaliacao = avaliacoes.findIndex(av => String(av.userId) === String(usuarioLogado.id));
+    // Procura avaliação existente do utilizador
+    let avaliacaoExistente = await Avaliacao.findOne({ userId: usuarioLogado.id });
 
-    if (indexAvaliacao !== -1) {
-      avaliacoes[indexAvaliacao].nota = nota;
-      avaliacoes[indexAvaliacao].comentario = comentario || "";
-      avaliacoes[indexAvaliacao].dataAtualizacao = new Date().toLocaleString('pt-BR');
+    if (avaliacaoExistente) {
+      // Atualiza avaliação existente
+      avaliacaoExistente.nota = nota;
+      avaliacaoExistente.comentario = comentario || "";
+      avaliacaoExistente.dataAtualizacao = new Date().toLocaleString('pt-BR');
+      await avaliacaoExistente.save();
     } else {
-      avaliacoes.push({ 
-        idAvaliacao: Date.now(),
+      // Cria nova avaliação
+      const novaAvaliacao = new Avaliacao({
         userId: usuarioLogado.id,
         username: usuarioLogado.username,
-        nota: nota, 
-        comentario: comentario || "", 
-        dataCriacao: new Date().toLocaleString('pt-BR') 
+        nota: nota,
+        comentario: comentario || "",
+        dataCriacao: new Date().toLocaleString('pt-BR')
       });
+      await novaAvaliacao.save();
     }
     
-    fs.writeFileSync(caminhoAvaliacoes, JSON.stringify(avaliacoes, null, 2));
-    res.status(201).json({ mensagem: "Avaliação registrada/atualizada com sucesso!" });
+    res.status(201).json({ mensagem: "Avaliação registada/atualizada com sucesso!" });
     
   } catch (error) { 
-    console.error("Erro ao salvar avaliação:", error);
-    res.status(500).json({ mensagem: "Erro interno ao salvar avaliação" }); 
+    console.error("Erro ao guardar avaliação:", error);
+    res.status(500).json({ mensagem: "Erro interno ao guardar avaliação" }); 
   }
 });
 
 // ==========================================
 // ROTAS DE GESTÃO DE PERFIL (MEU PERFIL)
 // ==========================================
-const caminhoUsuarios = path.join(__dirname, "./Data/users.json");
-const caminhoReceitas = path.join(__dirname, "./Data/receitas.json");
-
 app.put('/perfil/senha', async (req, res) => { 
   try {
     const authHeader = req.headers["authorization"];
@@ -169,30 +175,26 @@ app.put('/perfil/senha', async (req, res) => {
     const usuarioLogado = jwt.verify(token, SECRET);
     const { senhaAtual, novaSenha } = req.body;
 
-    if (fs.existsSync(caminhoUsuarios)) {
-      let usuarios = JSON.parse(fs.readFileSync(caminhoUsuarios, 'utf8'));
-      const index = usuarios.findIndex(u => String(u.id) === String(usuarioLogado.id));
+    const usuario = await User.findById(usuarioLogado.id);
 
-      if (index !== -1) {
-        const senhaValida = await bcrypt.compare(senhaAtual, usuarios[index].password);
-        if (!senhaValida) {
-          return res.status(400).json({ mensagem: "A senha atual está incorreta." }); 
-        }
-        
-        usuarios[index].password = await bcrypt.hash(novaSenha, 10);
-        
-        fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
-        return res.status(200).json({ mensagem: "Senha alterada com sucesso!" });
+    if (usuario) {
+      const senhaValida = await bcrypt.compare(senhaAtual, usuario.password);
+      if (!senhaValida) {
+        return res.status(400).json({ mensagem: "A palavra-passe atual está incorreta." }); 
       }
+      
+      usuario.password = await bcrypt.hash(novaSenha, 10);
+      await usuario.save();
+      return res.status(200).json({ mensagem: "Palavra-passe alterada com sucesso!" });
     }
-    res.status(404).json({ mensagem: "Usuário não encontrado." });
+    res.status(404).json({ mensagem: "Utilizador não encontrado." });
   } catch (error) {
-    console.error("Erro ao alterar senha no backend:", error);
-    res.status(500).json({ mensagem: "Erro no servidor ao alterar senha." });
+    console.error("Erro ao alterar palavra-passe no backend:", error);
+    res.status(500).json({ mensagem: "Erro no servidor ao alterar a palavra-passe." });
   }
 });
 
-app.delete('/perfil', (req, res) => {
+app.delete('/perfil', async (req, res) => {
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
@@ -200,49 +202,30 @@ app.delete('/perfil', (req, res) => {
     const token = authHeader.split(" ")[1];
     const usuarioLogado = jwt.verify(token, SECRET);
 
-    if (fs.existsSync(caminhoUsuarios)) {
-      let usuarios = JSON.parse(fs.readFileSync(caminhoUsuarios, 'utf8'));
-      usuarios = usuarios.filter(u => String(u.id) !== String(usuarioLogado.id));
-      fs.writeFileSync(caminhoUsuarios, JSON.stringify(usuarios, null, 2));
-    }
+    // Elimina o utilizador, as suas receitas e as suas avaliações
+    await User.findByIdAndDelete(usuarioLogado.id);
+    await Receita.deleteMany({ userId: usuarioLogado.id });
+    await Avaliacao.deleteMany({ userId: usuarioLogado.id });
 
-    if (fs.existsSync(caminhoReceitas)) {
-      let receitas = JSON.parse(fs.readFileSync(caminhoReceitas, 'utf8'));
-      receitas = receitas.filter(r => String(r.userId) !== String(usuarioLogado.id));
-      fs.writeFileSync(caminhoReceitas, JSON.stringify(receitas, null, 2));
-    }
-
-    if (fs.existsSync(caminhoAvaliacoes)) {
-      let avaliacoes = JSON.parse(fs.readFileSync(caminhoAvaliacoes, 'utf8'));
-      avaliacoes = avaliacoes.filter(av => String(av.userId) !== String(usuarioLogado.id));
-      fs.writeFileSync(caminhoAvaliacoes, JSON.stringify(avaliacoes, null, 2));
-    }
-
-    res.status(200).json({ mensagem: "Sua conta e dados foram excluídos com sucesso." });
+    res.status(200).json({ mensagem: "A sua conta e dados foram eliminados com sucesso." });
   } catch (error) {
-    res.status(500).json({ mensagem: "Erro ao excluir a conta." });
+    res.status(500).json({ mensagem: "Erro ao eliminar a conta." });
   }
 });
 
 // ==========================================
-// ROTAS PÚBLICAS: FLUXO DE RECUPERAÇÃO DE SENHA (NÃO EXIGEM TOKEN)
+// ROTAS PÚBLICAS: FLUXO DE RECUPERAÇÃO DE PALAVRA-PASSE (NÃO EXIGEM TOKEN)
 // ==========================================
 let tokensRecuperacaoMemoria = {}; 
 
-app.post('/users/esqueci-senha', (req, res) => {
+app.post('/users/esqueci-senha', async (req, res) => {
   try {
     const { username } = req.body;
-    const caminhoContas = path.join(__dirname, "./Data/users.json");
 
-    if (!fs.existsSync(caminhoContas)) {
-      return res.status(404).json({ mensagem: "Base de dados de usuários ausente." });
-    }
-
-    const usuarios = JSON.parse(fs.readFileSync(caminhoContas, 'utf8'));
-    const usuarioEncontrado = usuarios.find(u => u.username === username);
+    const usuarioEncontrado = await User.findOne({ username: username });
 
     if (!usuarioEncontrado) {
-      return res.status(404).json({ mensagem: "Nome de usuário não encontrado." });
+      return res.status(404).json({ mensagem: "Nome de utilizador não encontrado." });
     }
 
     const tokenSeguro = Math.floor(100000 + Math.random() * 900000);
@@ -263,30 +246,28 @@ app.post('/users/esqueci-senha', (req, res) => {
 app.post('/users/redefinir-senha', async (req, res) => {
   try {
     const { username, token, novaSenha } = req.body;
-    const caminhoContas = path.join(__dirname, "./Data/users.json");
 
     if (!tokensRecuperacaoMemoria[username] || tokensRecuperacaoMemoria[username] !== String(token)) {
       return res.status(400).json({ mensagem: "Token de segurança inválido, expirado ou corrompido." });
     }
 
-    let usuarios = JSON.parse(fs.readFileSync(caminhoContas, 'utf8'));
-    const index = usuarios.findIndex(u => u.username === username);
+    const usuario = await User.findOne({ username: username });
 
-    if (index !== -1) {
-      usuarios[index].password = await bcrypt.hash(novaSenha, 10); 
-      fs.writeFileSync(caminhoContas, JSON.stringify(usuarios, null, 2));
+    if (usuario) {
+      usuario.password = await bcrypt.hash(novaSenha, 10); 
+      await usuario.save();
       delete tokensRecuperacaoMemoria[username]; 
-      return res.status(200).json({ mensagem: "Senha redefinida com total sucesso!" });
+      return res.status(200).json({ mensagem: "Palavra-passe redefinida com total sucesso!" });
     }
 
-    res.status(404).json({ mensagem: "Usuário não localizado durante a gravação." });
+    res.status(404).json({ mensagem: "Utilizador não localizado durante a gravação." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ mensagem: "Erro no servidor ao salvar a nova credencial." });
+    res.status(500).json({ mensagem: "Erro no servidor ao guardar a nova credencial." });
   }
 });
 
 // ==========================================
 // INICIAR SERVIDOR
 // ==========================================
-app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Servidor a correr em http://localhost:${PORT}`));
