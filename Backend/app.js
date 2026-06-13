@@ -53,6 +53,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(200).json({ 
         nome: receitaExistente.nome, 
         ingredientes: receitaExistente.ingredientes,
+        imagem: receitaExistente.imagem || "", // Puxa imagem do cache
         origem: "cache" 
       });
     }
@@ -65,6 +66,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(200).json({ 
         nome: data.title, 
         ingredientes: data.ingredients.join(', '),
+        imagem: data.image || "", // Puxa a imagem original do site
         origem: "scraper" 
       });
     } catch (scraperErr) {
@@ -105,16 +107,26 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     let textoResposta = chatCompletion.choices[0]?.message?.content || "";
     textoResposta = textoResposta.replace(/```json|```/g, '').trim();
     
-    // PROTEÇÃO ANTI-CRASH (Try/Catch apenas no JSON.parse)
+    // PROTEÇÃO ANTI-CRASH E GERAÇÃO DE IMAGEM YOUTUBE
     let dadosFormatados;
     try {
       dadosFormatados = JSON.parse(textoResposta);
+      
+      // Se a IA gerou o JSON e for link do YouTube, criamos a thumbnail manualmente
+      let imagemGerada = "";
+      const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
+      const match = link.match(regex);
+      if (match && match[1].length === 11) {
+        imagemGerada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+      }
+      dadosFormatados.imagem = imagemGerada; // Injeta a imagem no retorno
+
     } catch (parseError) {
       console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
-      // Se falhar o parse, em vez do servidor crashar, enviamos um resultado padrão:
       dadosFormatados = {
         nome: "Receita Desconhecida",
-        ingredientes: "Não conseguimos extrair as informações. O link não contém texto legível ou legenda pública."
+        ingredientes: "Não conseguimos extrair as informações. O link não contém texto legível ou legenda pública.",
+        imagem: ""
       };
     }
     
@@ -216,8 +228,7 @@ app.post('/users/redefinir-senha', async (req, res) => {
   } catch (error) { res.status(500).json({ mensagem: "Erro no servidor." }); }
 });
 
-// --- PEQUENA ALTERAÇÃO FEITA AQUI PARA FORÇAR O GIT A DETETAR ---
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema atualizado com proteção anti-crash e modelo Groq Llama 3.1!");
+  console.log("✅ Sistema atualizado com imagens reais e motor Groq (Llama 3.1)!");
 });
