@@ -99,7 +99,6 @@ function navegar(idPagina, btnElement) {
 // ==========================================
 async function carregar() {
   try {
-    // Agora o Front-end envia o token para o Back-end
     const res = await fetch(API, {
       method: "GET",
       headers: { "Authorization": `Bearer ${obterToken()}` }
@@ -133,15 +132,15 @@ async function carregar() {
             </span>
           </div>
           
-          <button class="h-icon-btn" onclick="verIngredientes('${r.id}')" style="margin-right: 6px;" title="Ver Ingredientes">
+          <button class="h-icon-btn" onclick="verIngredientes('${r._id}')" style="margin-right: 6px;" title="Ver Ingredientes">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
           </button>
           
-          <button class="h-icon-btn" onclick="abrirEditarReceita('${r.id}')" style="margin-right: 6px; color: #3b82f6;" title="Editar Cadastro">
+          <button class="h-icon-btn" onclick="abrirEditarReceita('${r._id}')" style="margin-right: 6px; color: #3b82f6;" title="Editar Cadastro">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
           </button>
           
-          <button class="h-icon-btn" onclick="deletar('${r.id}')" style="color: #ef4444;" title="Excluir">
+          <button class="h-icon-btn" onclick="deletar('${r._id}')" style="color: #ef4444;" title="Excluir">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
@@ -164,7 +163,6 @@ async function criarReceita() {
     return alert("Por favor, cole um link válido para extrair a receita!");
   }
 
-  // --- INÍCIO DO EFEITO VISUAL DE LOADING ---
   const textoOriginal = btnExtrair.innerText;
   btnExtrair.innerText = "Processando IA... 🤖";
   btnExtrair.style.opacity = "0.7";
@@ -220,7 +218,6 @@ async function criarReceita() {
     console.error("Erro no fluxo de execução de IA:", error);
     alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
   } finally {
-    // --- FIM DO EFEITO DE LOADING ---
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
     btnExtrair.style.cursor = "pointer";
@@ -241,11 +238,13 @@ async function deletar(id) {
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });
 
+    const dados = await res.json();
+
     if (res.ok) {
       alert("Receita excluída com sucesso do banco de dados!");
       carregar(); 
     } else {
-      alert("Erro de Autorização: O teu login expirou ou não tens permissão.");
+      alert("Erro do servidor: " + (dados.mensagem || "Erro desconhecido"));
     }
   } catch (error) {
     console.error("Erro ao deletar receita:", error);
@@ -257,7 +256,7 @@ async function deletar(id) {
 // GERENCIAMENTO DE EDIÇÃO (MODAL + PUT)
 // ==========================================
 function abrirEditarReceita(id) {
-  const receita = receitasGlobais.find(r => String(r.id) === String(id));
+  const receita = receitasGlobais.find(r => String(r._id) === String(id));
   if (!receita) return alert("Receita não encontrada!");
 
   document.getElementById("edit-nome").value = receita.nome;
@@ -366,7 +365,7 @@ async function salvarReceitaManual() {
 // VISUALIZAR INGREDIENTES EXTRAÍDOS
 // ==========================================
 function verIngredientes(idDaReceita) {
-  const receita = receitasGlobais.find(r => String(r.id) === String(idDaReceita));
+  const receita = receitasGlobais.find(r => String(r._id) === String(idDaReceita));
   if (!receita) return;
 
   navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
@@ -549,7 +548,6 @@ function carregarPedidosShopper() {
 // ==========================================
 async function carregarHistorico() {
   try {
-    // Também enviamos o Token na visualização do histórico
     const res = await fetch(API, {
       method: "GET",
       headers: { "Authorization": `Bearer ${obterToken()}` }
@@ -570,14 +568,14 @@ async function carregarHistorico() {
           <div style="display: flex; align-items: center; gap: 16px;">
             <img src="${img}" alt="${r.nome}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">#${r.id || (index + 1)} - ${r.nome}</h3>
+              <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
               <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
                 <span style="color: #a3a3a3;">Sincronizado via Web Scraping</span>
                 <span style="color: #10b981;">Ativo</span>
               </div>
             </div>
           </div>
-          <button class="h-icon-btn" onclick="verIngredientes('${r.id}')" title="Ver Receita">
+          <button class="h-icon-btn" onclick="verIngredientes('${r._id}')" title="Ver Receita">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
           </button>
         </div>
