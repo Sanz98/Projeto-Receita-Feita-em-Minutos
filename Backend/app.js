@@ -40,12 +40,30 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO AVANÇADA (100% BLINDADA)
+// ROTA DE EXTRAÇÃO AVANÇADA (A TODO CUSTO)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
-    const { link } = req.body;
+    let { link } = req.body;
     if (!link) return res.status(400).json({ mensagem: "Por favor, forneça um link válido." });
+
+    // --- FILTRO INTELIGENTE MOBILE ---
+    let urlLimpa = link;
+    let tituloExtraidoDoTexto = "";
+
+    const urlRegex = /(https?:\/\/[^\s]+)/;
+    const matchUrl = link.match(urlRegex);
+
+    if (matchUrl) {
+      urlLimpa = matchUrl[1]; 
+      tituloExtraidoDoTexto = link.replace(urlLimpa, '').trim(); 
+      tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/- YouTube$/i, '').trim();
+      tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/\| TikTok$/i, '').trim();
+      tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/Olha este vídeo no TikTok!/i, '').trim();
+    }
+
+    link = urlLimpa;
+    let tituloOficial = tituloExtraidoDoTexto;
 
     // 1. CAMADA DE CACHE
     const receitaExistente = await Receita.findOne({ link: link });
@@ -63,22 +81,24 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
       
-      return res.status(200).json({ 
-        nome: data.title, 
-        ingredientes: data.ingredients.join(', '),
-        imagem: data.image || "", 
-        origem: "scraper" 
-      });
+      // Só devolve pelo scraper se ele realmente encontrou ingredientes
+      if (data.ingredients && data.ingredients.length > 0) {
+        return res.status(200).json({ 
+          nome: tituloOficial || data.title, 
+          ingredientes: data.ingredients.join(', '),
+          imagem: data.image || "", 
+          origem: "scraper" 
+        });
+      }
     } catch (scraperErr) {
-      console.log("Scraper direto falhou. A iniciar leitura profunda do site...");
+      console.log("Scraper não conseguiu ingredientes completos, acionando IA a todo custo...");
     }
 
-    // 3. CAMADA DE LEITURA UNIVERSAL (TÍTULO PARA TODOS OS LINKS)
+    // 3. CAMADA DE LEITURA UNIVERSAL E PROFUNDA
     let contextoAdicional = "";
     let imagemCapturada = "";
-    let tituloOficial = "";
 
-    // A) Vamos ROUBAR o HTML de QUALQUER link primeiro (com User-Agent para evitar bloqueios)
+    // A) ROUBAR o HTML de QUALQUER link primeiro
     try {
       const response = await fetch(link, {
         headers: {
@@ -87,32 +107,48 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       });
       const html = await response.text();
       
-      // Roubar o Título e limpar lixo (" - YouTube", quebras de linha)
-      const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-      if (titleMatch && titleMatch[1]) {
-        tituloOficial = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '').replace(/ \| TikTok/g, '');
+      // Tenta pegar o Título
+      if (!tituloOficial) {
+        const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (titleMatch && titleMatch[1]) {
+          let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '').replace(/ \| TikTok/g, '');
+          if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb) && !titleWeb.includes("http")) {
+            tituloOficial = titleWeb;
+          }
+        }
       }
       
-      // Roubar a Fotografia Oficial (OG:Image)
+      // Tenta pegar a Fotografia Oficial (OG:Image)
       const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
                     || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
       if (imgMatch && imgMatch[1]) {
         imagemCapturada = imgMatch[1];
       }
+
+      // NOVIDADE: Roubar o Miolo do Site (Texto da Receita) para a IA ler!
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch && bodyMatch[1]) {
+        contextoAdicional = bodyMatch[1]
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove código
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   // Remove CSS
+          .replace(/<[^>]+>/g, ' ')                         // Remove tags HTML
+          .replace(/\s+/g, ' ')                             // Limpa espaços extras
+          .trim()
+          .substring(0, 3500); // Pega os primeiros 3500 caracteres
+      }
     } catch(err) {
       console.log("Falha ao capturar o HTML externo.");
     }
 
-    // B) Se for YouTube, AGORA SIM puxamos a legenda também!
+    // B) Se for YouTube, substituímos o texto do site pela LEGENDA!
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
-        contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3000); 
+        contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3500); 
       } catch (err) {
         console.log("Vídeo sem legenda disponível.");
       }
       
-      // Se a imagem não tiver sido capturada pelo HTML, força o padrão do YouTube
       if (!imagemCapturada) {
         const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
         const match = link.match(regex);
@@ -122,21 +158,22 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // 4. CAMADA DE IA (Groq)
-    const prompt = `Você é um assistente culinário. Extraia os ingredientes do seguinte contexto:
+    // 4. CAMADA DE IA (GROQ) - MODO SOBREVIVÊNCIA
+    const prompt = `Você é um chef especialista. Sua missão é DEVOLVER UMA LISTA DE INGREDIENTES A QUALQUER CUSTO.
     Link: ${link}
-    Título do Vídeo/Site: ${tituloOficial || "Desconhecido"}
-    Legenda Extraída: ${contextoAdicional || "Não disponível"}
+    Título da Receita: ${tituloOficial || "Desconhecido"}
+    Texto Extraído do Site/Vídeo: ${contextoAdicional || "Não disponível"}
     
     REGRAS ABSOLUTAS:
     1. Responda EXCLUSIVAMENTE em formato JSON: {"nome": "...", "ingredientes": "..."}.
-    2. O "nome" DEVE OBRIGATORIAMENTE ser o "Título do Vídeo/Site" fornecido acima.
-    3. Formate os ingredientes numa única linha, separados por vírgula.`;
+    2. O "nome" DEVE OBRIGATORIAMENTE ser o "Título da Receita" fornecido acima.
+    3. Formate os ingredientes numa única linha, separados por vírgula.
+    4. MODO DE SOBREVIVÊNCIA: Se o "Texto Extraído" for vazio, inútil ou não contiver ingredientes, VOCÊ É OBRIGADO a inventar/deduzir os ingredientes mais lógicos e prováveis usando APENAS o "Título da Receita". Nunca responda que não conseguiu encontrar. Crie a lista!`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.1-8b-instant", 
-      temperature: 0.1, 
+      temperature: 0.2, // Um pouco mais alto para permitir dedução lógica
     });
 
     let textoResposta = chatCompletion.choices[0]?.message?.content || "";
@@ -146,19 +183,18 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     try {
       dadosFormatados = JSON.parse(textoResposta);
       
-      // INJEÇÃO FORÇADA: Ignora o que a IA pensou e FORÇA o uso do título real do site/vídeo
+      // Força o uso do título real se a IA tentar mudar
       if (tituloOficial && tituloOficial !== "Desconhecido") {
         dadosFormatados.nome = tituloOficial;
       }
-      
-      // Força a imagem correta
       dadosFormatados.imagem = imagemCapturada || ""; 
 
     } catch (parseError) {
       console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
+      // Fallback final caso o JSON venha corrompido
       dadosFormatados = {
         nome: tituloOficial || "Receita Desconhecida",
-        ingredientes: "Não conseguimos extrair os detalhes desta receita.",
+        ingredientes: "Ingredientes básicos (deduzidos), sal, pimenta, óleo, água",
         imagem: imagemCapturada || ""
       };
     }
@@ -262,5 +298,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema blindado: Extração universal de título + Injeção ativada!");
+  console.log("✅ Sistema de IA Modo Sobrevivência Ativado!");
 });
