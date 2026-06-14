@@ -232,7 +232,9 @@ Abaixo estão as capturas de tela demonstrando a interface final e a usabilidade
 
 1️⃣ Tela de Login e Autenticação
 
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/a49b2e21-67bc-4223-8d7c-db5630f46c31" />
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/51ccf19b-c126-47a0-82b4-9c2037cc0e32" />
+
+
 
 
 2️⃣ Interface do Cliente (Aplicação de Receitas)
