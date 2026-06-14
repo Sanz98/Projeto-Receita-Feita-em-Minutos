@@ -99,4 +99,25 @@ async function deletar(req, res) {
     }
 }
 
-module.exports = { listar, register, login, atualizar, deletar };
+// NOVO: REMOVER ENDEREÇO
+async function removerEndereco(req, res) {
+    try {
+        const { index } = req.params;
+        const userId = req.usuario.id; // Middleware auth.js injeta o ID
+
+        const usuario = await User.findById(userId);
+        if (!usuario) return res.status(404).json({ mensagem: "Utilizador não encontrado." });
+
+        if (index < 0 || index >= usuario.enderecosSalvos.length) {
+            return res.status(400).json({ mensagem: "Índice de endereço inválido." });
+        }
+
+        usuario.enderecosSalvos.splice(index, 1);
+        await usuario.save();
+        res.status(200).json({ mensagem: "Endereço removido com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro ao remover endereço." });
+    }
+}
+
+module.exports = { listar, register, login, atualizar, deletar, removerEndereco };

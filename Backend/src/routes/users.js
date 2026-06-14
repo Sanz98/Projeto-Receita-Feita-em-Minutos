@@ -9,6 +9,8 @@ router.get('/', userController.listar);
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.put('/:id', verificarToken, userController.atualizar);
-router.delete('/:id', verificarToken, userController.deletar);
+// ... (mantenha os outros códigos)
+
+router.delete('/perfil/endereco/:index', verificarToken, userController.removerEndereco);
 
 module.exports = router;
