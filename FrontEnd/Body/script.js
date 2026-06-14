@@ -552,7 +552,7 @@ async function removerEndereco(index) {
 
 function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   let modal = document.getElementById('modal-endereco');
-  if (modal) modal.remove();
+  if(modal) modal.remove();
 
   const titulo = modo === 'pedido' ? 'Onde devemos entregar?' : 'Alterar Destino';
   const btnTexto = modo === 'pedido' ? 'Confirmar e Pedir' : 'Confirmar Nova Rota';
@@ -560,18 +560,42 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   modal = document.createElement('div');
   modal.id = 'modal-endereco';
   modal.innerHTML = `
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">
-      <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto;">
-        <h3 style="color: #f5f5f5; margin-top: 0;">${titulo}</h3>
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+      <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+        <h3 style="color: #f5f5f5; margin-top: 0; font-size: 1.3rem;">${titulo}</h3>
+
         <div id="area-enderecos-salvos" style="display: none; margin-bottom: 20px;">
-          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin-bottom: 10px;">Seus Endereços Salvos</p>
+          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin: 0 0 10px 0;">Seus Endereços Salvos</p>
           <div id="lista-enderecos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
-        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.8rem; margin: 15px 0;">OU PREENCHA UM NOVO</div>
-        <button onclick="processarFormularioEndereco('${modo}', ${pedidoId ? `'${pedidoId}'` : null}, ${valorTotal})" 
-        style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; cursor: pointer;">
-        ${btnTexto}
-        </button>
+
+        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.85rem; margin-bottom: 15px; font-weight: 600;">OU PREENCHA UM NOVO ENDEREÇO</div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-cep" placeholder="CEP" maxlength="9" onkeyup="mascaraCEP(this)" onchange="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; outline: none;">
+          <button id="btn-buscar-cep" onclick="buscarCEP()" style="padding: 0 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Buscar</button>
+        </div>
+
+        <input type="text" id="input-rua" placeholder="Rua / Logradouro" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; margin-bottom: 10px; box-sizing: border-box; outline: none;">
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <input type="text" id="input-numero" placeholder="Número" oninput="desmarcarRadios()" style="width: 30%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-complemento" placeholder="Complemento" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-bairro" placeholder="Bairro" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-cidade" placeholder="Cidade - UF" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 10px; color: #a3a3a3; font-size: 0.85rem; margin-bottom: 25px; cursor: pointer;">
+          <input type="checkbox" id="check-salvar-endereco" style="width: 18px; height: 18px; accent-color: #10b981;"> Salvar este endereço para as próximas compras
+        </label>
+
+        <button onclick="processarFormularioEndereco('${modo}', ${pedidoId ? `'${pedidoId}'` : null}, ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">${btnTexto}</button>
+
+        <button onclick="fecharModalEndereco()" style="width: 100%; padding: 12px; background: transparent; color: #a3a3a3; border: none; cursor: pointer; font-weight: 500;">Cancelar</button>
+      </div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -583,7 +607,7 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
         document.getElementById("area-enderecos-salvos").style.display = "block";
         document.getElementById("divisor-ou").style.display = "block";
         const lista = document.getElementById("lista-enderecos");
-
+        
         data.enderecosSalvos.forEach((end, idx) => {
           lista.innerHTML += `
             <label style="display: flex; align-items: center; gap: 10px; background: #1c1c1e; padding: 10px; border-radius: 8px; border: 1px solid #323238; color: #f5f5f5;">
