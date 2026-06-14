@@ -60,6 +60,9 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/- YouTube$/i, '').trim();
       tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/\| TikTok$/i, '').trim();
       tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/Olha este vídeo no TikTok!/i, '').trim();
+      
+      // Limpeza caso o partilhar mobile mande só "YouTube"
+      if (tituloExtraidoDoTexto.toLowerCase() === "youtube") tituloExtraidoDoTexto = "";
     }
 
     link = urlLimpa;
@@ -81,7 +84,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
       
-      // Só devolve pelo scraper se ele realmente encontrou ingredientes
       if (data.ingredients && data.ingredients.length > 0) {
         return res.status(200).json({ 
           nome: tituloOficial || data.title, 
@@ -102,18 +104,31 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     try {
       const response = await fetch(link, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
         }
       });
       const html = await response.text();
       
-      // Tenta pegar o Título
+      // NOVIDADE: Prioridade Absoluta para OG:TITLE (Contém o título real do vídeo do YouTube)
       if (!tituloOficial) {
-        const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        if (titleMatch && titleMatch[1]) {
-          let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '').replace(/ \| TikTok/g, '');
-          if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb) && !titleWeb.includes("http")) {
+        const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) 
+                          || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i);
+        if (ogTitleMatch && ogTitleMatch[1]) {
+          let titleWeb = ogTitleMatch[1].trim();
+          if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb)) {
             tituloOficial = titleWeb;
+          }
+        }
+        
+        // Fallback para a tag title normal se OG não existir
+        if (!tituloOficial) {
+          const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+          if (titleMatch && titleMatch[1]) {
+            let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '');
+            if (!/^(YouTube|TikTok|Instagram)$/i.test(titleWeb) && !titleWeb.includes("http")) {
+              tituloOficial = titleWeb;
+            }
           }
         }
       }
@@ -125,16 +140,16 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         imagemCapturada = imgMatch[1];
       }
 
-      // NOVIDADE: Roubar o Miolo do Site (Texto da Receita) para a IA ler!
+      // Roubar o Miolo do Site (Texto da Receita)
       const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
       if (bodyMatch && bodyMatch[1]) {
         contextoAdicional = bodyMatch[1]
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove código
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   // Remove CSS
-          .replace(/<[^>]+>/g, ' ')                         // Remove tags HTML
-          .replace(/\s+/g, ' ')                             // Limpa espaços extras
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') 
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   
+          .replace(/<[^>]+>/g, ' ')                         
+          .replace(/\s+/g, ' ')                             
           .trim()
-          .substring(0, 3500); // Pega os primeiros 3500 caracteres
+          .substring(0, 3500); 
       }
     } catch(err) {
       console.log("Falha ao capturar o HTML externo.");
@@ -146,7 +161,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
         contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3500); 
       } catch (err) {
-        console.log("Vídeo sem legenda disponível.");
+        console.log("Vídeo sem legenda disponível. Forçando IA a deduzir...");
+        contextoAdicional = ""; // Limpa lixo HTML do YouTube para forçar dedução correta!
       }
       
       if (!imagemCapturada) {
@@ -161,19 +177,19 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     // 4. CAMADA DE IA (GROQ) - MODO SOBREVIVÊNCIA
     const prompt = `Você é um chef especialista. Sua missão é DEVOLVER UMA LISTA DE INGREDIENTES A QUALQUER CUSTO.
     Link: ${link}
-    Título da Receita: ${tituloOficial || "Desconhecido"}
+    Título da Receita: ${tituloOficial || "Receita Culinária"}
     Texto Extraído do Site/Vídeo: ${contextoAdicional || "Não disponível"}
     
     REGRAS ABSOLUTAS:
     1. Responda EXCLUSIVAMENTE em formato JSON: {"nome": "...", "ingredientes": "..."}.
     2. O "nome" DEVE OBRIGATORIAMENTE ser o "Título da Receita" fornecido acima.
     3. Formate os ingredientes numa única linha, separados por vírgula.
-    4. MODO DE SOBREVIVÊNCIA: Se o "Texto Extraído" for vazio, inútil ou não contiver ingredientes, VOCÊ É OBRIGADO a inventar/deduzir os ingredientes mais lógicos e prováveis usando APENAS o "Título da Receita". Nunca responda que não conseguiu encontrar. Crie a lista!`;
+    4. MODO DE SOBREVIVÊNCIA: Se o "Texto Extraído" for vazio, inútil ou não contiver ingredientes, VOCÊ É OBRIGADO a deduzir a lista de ingredientes originais e essenciais para preparar a receita especificada em "Título da Receita". Nunca devolva ingredientes vazios ou com erro.`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.1-8b-instant", 
-      temperature: 0.2, // Um pouco mais alto para permitir dedução lógica
+      temperature: 0.2, 
     });
 
     let textoResposta = chatCompletion.choices[0]?.message?.content || "";
@@ -183,18 +199,20 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     try {
       dadosFormatados = JSON.parse(textoResposta);
       
-      // Força o uso do título real se a IA tentar mudar
-      if (tituloOficial && tituloOficial !== "Desconhecido") {
+      // Força o uso do título real se a IA tentar mudar e garante que não salva como "YouTube"
+      if (tituloOficial && !/^(YouTube|TikTok|Instagram)$/i.test(tituloOficial)) {
         dadosFormatados.nome = tituloOficial;
+      } else if (dadosFormatados.nome.toLowerCase() === "youtube") {
+        dadosFormatados.nome = "Receita de YouTube (Requer Edição)";
       }
+      
       dadosFormatados.imagem = imagemCapturada || ""; 
 
     } catch (parseError) {
       console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
-      // Fallback final caso o JSON venha corrompido
       dadosFormatados = {
         nome: tituloOficial || "Receita Desconhecida",
-        ingredientes: "Ingredientes básicos (deduzidos), sal, pimenta, óleo, água",
+        ingredientes: "Ovos, Farinha, Açúcar, Manteiga, Leite (Ingredientes sugeridos, edite depois)",
         imagem: imagemCapturada || ""
       };
     }
@@ -298,5 +316,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema de IA Modo Sobrevivência Ativado!");
+  console.log("✅ Correção OG:Title aplicada (Fim do bug 'YouTube' e ingredientes repetidos)!");
 });
