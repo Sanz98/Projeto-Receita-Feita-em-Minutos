@@ -44,18 +44,26 @@ function showToast(message, type = 'success') {
     ? `<svg style="width: 22px; height: 22px; color: ${bgColor}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`
     : `<svg style="width: 22px; height: 22px; color: ${bgColor}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`;
 
-  toast.style.cssText = `background: #202024; border: 1px solid #323238; border-left: 4px solid ${bgColor}; color: #f5f5f5; padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'Poppins', sans-serif; font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 40px); transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease; opacity: 0; pointer-events: auto;`;
+  toast.style.cssText = `
+    background: #202024; border: 1px solid #323238; border-left: 4px solid ${bgColor}; 
+    color: #f5f5f5; padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    font-family: 'Poppins', sans-serif; font-size: 0.95rem; font-weight: 500; display: flex; 
+    align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 40px); 
+    transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease; 
+    opacity: 0; pointer-events: auto;
+  `;
   
   toast.innerHTML = `${icon} <span style="line-height: 1.4;">${message}</span>`;
   container.appendChild(toast);
   
   requestAnimationFrame(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; });
-  setTimeout(() => { toast.style.transform = 'translateX(120%)'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
+  
+  setTimeout(() => {
+    toast.style.transform = 'translateX(120%)'; toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
 }
 
-// ==========================================
-// FUNÇÕES DE RECEITA
-// ==========================================
 function gerarImagemReceita(nome, link) {
   if (link) {
     const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
@@ -64,6 +72,15 @@ function gerarImagemReceita(nome, link) {
   }
   const busca = (nome && nome !== "Receita via Link") ? nome : "delicious recipe";
   return `https://loremflickr.com/400/300/${encodeURIComponent(busca.trim().split(' ')[0])},food/all?lock=${Math.floor(Math.random() * 1000)}`;
+}
+
+function mostrarPreview() {
+  const link = document.getElementById("input-link").value;
+  const imgElement = document.getElementById("previewReceita");
+  if (!link) { imgElement.style.display = 'none'; return; }
+  const match = link.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
+  imgElement.src = match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : "https://loremflickr.com/400/300/recipe,cooking/all";
+  imgElement.style.display = 'block';
 }
 
 function navegar(idPagina, btnElement) {
@@ -78,6 +95,9 @@ function navegar(idPagina, btnElement) {
   if (idPagina === 'perfil') carregarPerfil();
 }
 
+// ==========================================
+// OPERAÇÕES DE RECEITAS
+// ==========================================
 async function carregar() {
   try {
     const res = await fetch(API, { headers: { "Authorization": `Bearer ${obterToken()}` } });
@@ -107,43 +127,185 @@ async function carregar() {
   } catch (e) {}
 }
 
+async function criarReceita() {
+  const linkInput = document.getElementById("input-link");
+  const linkOriginal = linkInput ? linkInput.value.trim() : ""; 
+  const btnExtrair = document.querySelector("#home .form .btn-primary");
+
+  if (!linkOriginal) return showToast("Por favor, cole um link válido para extrair a receita!", "error");
+
+  btnExtrair.innerText = "Processando IA... 🤖"; btnExtrair.disabled = true;
+
+  try {
+    const respostaIA = await fetch(`${baseUrl}/receitas/extrair-ia`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link: linkOriginal }) });
+    if (!respostaIA.ok) throw new Error("Falha na Inteligência Artificial.");
+
+    const dados = await respostaIA.json(); 
+    const urlImagemGerada = dados.imagem || gerarImagemReceita(dados.nome, linkOriginal);
+
+    const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nome: dados.nome, ingredientes: dados.ingredientes, link: linkOriginal, imagem: urlImagemGerada }) });
+
+    if (res.ok) { linkInput.value = ""; document.getElementById("previewReceita").style.display = 'none'; await carregar(); showToast("Receita extraída com sucesso!", "success"); navegar('confirmacao', document.querySelectorAll('.menu button')[7]); }
+  } catch (error) { showToast("Falha de conexão com a IA.", "error"); } 
+  finally { btnExtrair.innerText = "Sincronizar via IA"; btnExtrair.disabled = false; }
+}
+
+async function deletar(id) {
+  if (!confirm("Excluir esta receita permanentemente?")) return; 
+  try {
+    const res = await fetch(`${API}/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
+    if (res.ok) { showToast("Receita excluída!", "success"); carregar(); }
+  } catch (error) { showToast("Erro de conexão.", "error"); }
+}
+
+function abrirEditarReceita(id) {
+  const r = receitasGlobais.find(rec => String(rec._id) === String(id));
+  if (!r) return;
+  document.getElementById("edit-nome").value = r.nome;
+  document.getElementById("edit-link").value = r.link || "";
+  document.getElementById("edit-ingredientes").value = r.ingredientes;
+  document.getElementById("btn-salvar-edicao").onclick = () => salvarEdicaoReceita(id, r.imagem);
+  document.getElementById("modal-editar").style.display = "flex";
+}
+
+function fecharModalEditar() { document.getElementById("modal-editar").style.display = "none"; }
+
+async function salvarEdicaoReceita(id, img) {
+  const nome = document.getElementById("edit-nome").value.trim();
+  const link = document.getElementById("edit-link").value.trim();
+  const ingredientes = document.getElementById("edit-ingredientes").value.trim();
+  if (!nome || !ingredientes) return showToast("Campos não podem ficar vazios!", "error");
+  try {
+    const res = await fetch(`${API}/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nome, link, ingredientes, imagem: img }) });
+    if (res.ok) { fecharModalEditar(); carregar(); showToast("Atualizada!", "success"); }
+  } catch (error) { showToast("Erro de requisição.", "error"); }
+}
+
+function abrirModalAdicionar() {
+  document.getElementById("add-nome").value = ""; document.getElementById("add-ingredientes").value = ""; document.getElementById("add-imagem").value = "";
+  document.getElementById("modal-adicionar").style.display = "flex";
+}
+
+function fecharModalAdicionar() { document.getElementById("modal-adicionar").style.display = "none"; }
+
+async function salvarReceitaManual() {
+  const nome = document.getElementById("add-nome").value.trim();
+  const ingredientes = document.getElementById("add-ingredientes").value.trim();
+  let imagem = document.getElementById("add-imagem").value.trim();
+  if (!nome || !ingredientes) return showToast("Preencha Nome e Ingredientes!", "error");
+  if (!imagem) imagem = `https://loremflickr.com/400/300/${encodeURIComponent(nome.split(' ')[0])},food/all?lock=${Math.floor(Math.random() * 1000)}`;
+
+  try {
+    const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nome, ingredientes, link: "Manual", imagem }) });
+    if (res.ok) { fecharModalAdicionar(); await carregar(); showToast("Receita criada!", "success"); }
+  } catch (error) { showToast("Falha de conexão.", "error"); }
+}
+
 // ==========================================
-// MODAL DE ENDEREÇO UNIVERSAL
+// INGREDIENTES E COMPRAS
+// ==========================================
+function verIngredientes(id) {
+  const r = receitasGlobais.find(rec => String(rec._id) === String(id));
+  if (!r) return;
+  navegar('ingredientes', document.querySelectorAll('.menu button')[1]);
+  document.getElementById('titulo-ingredientes').innerText = `Ingredientes: ${r.nome}`;
+  
+  let html = '';
+  (r.ingredientes || "Nenhum").split(',').forEach(item => {
+    if (item.trim()) {
+      html += `
+        <label class="checkbox-label" style="margin-bottom: 12px; display: flex; align-items: center; padding: 10px; border-radius: 6px; background: #262626; border: 1px solid #404040; cursor: pointer;">
+          <input type="checkbox" class="checkbox-input" onchange="toggleCheckbox(this)" style="margin-right: 10px;" data-nome="${item.trim()}">
+          <span class="checkbox-text" style="color: #e5e5e5;">${item.trim()}</span>
+        </label>`;
+    }
+  });
+  document.getElementById('lista-ingredientes').innerHTML = html;
+  capturarItensParaFaltantes(); 
+}
+
+function toggleCheckbox(el) {
+  const label = el.closest('label'); const text = label.querySelector('.checkbox-text');
+  if (el.checked) { label.style.backgroundColor = 'rgba(38,38,38,0.4)'; text.style.textDecoration = 'line-through'; text.style.color = '#737373'; } 
+  else { label.style.backgroundColor = '#262626'; text.style.textDecoration = 'none'; text.style.color = '#e5e5e5'; }
+  capturarItensParaFaltantes();
+}
+
+function capturarItensParaFaltantes() {
+  itensParaComprarGlobal = [];
+  document.querySelectorAll('#lista-ingredientes .checkbox-input').forEach(cb => { if (!cb.checked) itensParaComprarGlobal.push(cb.getAttribute('data-nome')); });
+}
+
+function atualizarListaCompras() {
+  const container = document.getElementById("lista-compras-itens");
+  if (!container) return;
+  if (itensParaComprarGlobal.length === 0) { container.innerHTML = `<p class="empty-text" style="color: #737373;">Todos os ingredientes estão marcados como disponíveis ou nenhuma receita foi selecionada.</p>`; return; }
+
+  let html = `<div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">`;
+  let total = 0;
+  itensParaComprarGlobal.forEach(item => {
+    const preco = (Math.random() * 12 + 3); total += preco;
+    html += `<div style="display: flex; justify-content: space-between; padding: 12px; background: #262626; border-radius: 6px;"><span style="color:#e5e5e5;">${item}</span><span style="color:#10b981; font-weight:700;">R$ ${preco.toFixed(2).replace('.',',')}</span></div>`;
+  });
+  html += `</div><div style="padding:16px; background:#171717; border:2px dashed #10b981; border-radius:8px; display:flex; justify-content:space-between; margin-bottom:20px;"><span style="color:#a3a3a3; font-weight:700;">Total Estimado:</span><span style="color:#10b981; font-size:1.25rem; font-weight:800;">R$ ${total.toFixed(2).replace('.',',')}</span></div>`;
+  container.innerHTML = html;
+  document.querySelector("#compras .btn-primary").setAttribute("onclick", `abrirModalEndereco('pedido', null, ${total})`);
+}
+
+// ==========================================
+// MODAL INTELIGENTE DE ENDEREÇOS (COM VISUALIZAÇÃO DESTACADA)
 // ==========================================
 function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   let modal = document.getElementById('modal-endereco');
   if(modal) modal.remove();
 
   const titulo = modo === 'pedido' ? 'Onde devemos entregar?' : 'Alterar Destino da Entrega';
+  const subtitulo = modo === 'pedido' ? 'Selecione ou insira um endereço.' : 'A alteração de rota adicionará uma taxa de R$ 3,00.';
   const btnTexto = modo === 'pedido' ? 'Confirmar e Pedir' : 'Confirmar Nova Rota (+R$ 3,00)';
 
   modal = document.createElement('div');
   modal.id = 'modal-endereco';
   modal.innerHTML = `
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;">
-      <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto;">
-        <h3 style="color: #f5f5f5; margin-top: 0;">${titulo}</h3>
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+      <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+        <h3 style="color: #f5f5f5; margin-top: 0; font-size: 1.3rem;">${titulo}</h3>
+        <p style="color: #a3a3a3; font-size: 0.85rem; margin-bottom: 20px;">${subtitulo}</p>
+
         <div id="area-enderecos-salvos" style="display: none; margin-bottom: 20px;">
-          <p style="color: #10b981; font-size: 0.85rem; margin-bottom: 10px;">Endereços Salvos:</p>
+          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin: 0 0 10px 0;">Seus Endereços Salvos</p>
           <div id="lista-enderecos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
-        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.8rem; margin: 15px 0;">OU NOVO ENDEREÇO</div>
-        <input type="text" id="input-cep" placeholder="CEP" onkeyup="mascaraCEP(this)" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <button id="btn-buscar-cep" onclick="buscarCEP()" style="width:100%; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 8px; margin-bottom: 10px;">Buscar CEP</button>
-        <input type="text" id="input-rua" placeholder="Rua" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <input type="text" id="input-numero" placeholder="Número" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <input type="text" id="input-complemento" placeholder="Complemento" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <input type="text" id="input-bairro" placeholder="Bairro" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <input type="text" id="input-cidade" placeholder="Cidade-UF" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; color: #f5f5f5; border-radius: 8px; margin-bottom: 10px;">
-        <label style="color: #a3a3a3; font-size: 0.8rem; display:flex; align-items:center; gap:8px; margin-bottom:20px;">
-           <input type="checkbox" id="check-salvar-endereco"> Salvar este endereço
+
+        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.85rem; margin-bottom: 15px; font-weight: 600;">OU PREENCHA UM NOVO ENDEREÇO</div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-cep" placeholder="CEP" maxlength="9" onkeyup="mascaraCEP(this)" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; outline: none;">
+          <button onclick="buscarCEP()" style="padding: 0 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Buscar</button>
+        </div>
+
+        <input type="text" id="input-rua" placeholder="Rua / Logradouro" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; margin-bottom: 10px; box-sizing: border-box; outline: none;">
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <input type="text" id="input-numero" placeholder="Número" oninput="desmarcarRadios()" style="width: 30%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-complemento" placeholder="Complemento" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-bairro" placeholder="Bairro" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-cidade" placeholder="Cidade - UF" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 10px; color: #a3a3a3; font-size: 0.85rem; margin-bottom: 25px; cursor: pointer;">
+          <input type="checkbox" id="check-salvar-endereco" style="width: 18px; height: 18px; accent-color: #10b981;"> Salvar este endereço na minha lista
         </label>
-        <button onclick="processarFormularioEndereco('${modo}', '${pedidoId}', ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; margin-bottom: 10px;">${btnTexto}</button>
-        <button onclick="fecharModalEndereco()" style="width: 100%; padding: 10px; background: transparent; color: #737373; border: none;">Cancelar</button>
+
+        <button onclick="processarFormularioEndereco('${modo}', '${pedidoId}', ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">${btnTexto}</button>
+        <button onclick="fecharModalEndereco()" style="width: 100%; padding: 10px; background: transparent; color: #a3a3a3; border: none; cursor: pointer;">Cancelar</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
 
+  // Busca e desenha os endereços salvos
   fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
     .then(res => res.json())
     .then(data => {
@@ -151,85 +313,83 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
         document.getElementById("area-enderecos-salvos").style.display = "block";
         document.getElementById("divisor-ou").style.display = "block";
         const lista = document.getElementById("lista-enderecos");
+        
         data.enderecosSalvos.forEach((end) => {
-          const safeEnd = end.replace(/'/g, "\\'");
           lista.innerHTML += `
-            <div style="display:flex; gap:8px; align-items:center;">
-              <label class="label-endereco-salvo" style="display: flex; align-items: center; gap: 10px; background: #1c1c1e; padding: 10px; border-radius: 8px; border: 1px solid #323238; flex:1; cursor:pointer;">
-                <input type="radio" name="endereco-selecionado" value="${end}" onchange="destacarEndereco(this)"> ${end}
-              </label>
-              <button onclick="deletarEnderecoSalvo('${safeEnd}', '${modo}', '${pedidoId}', ${valorTotal})" style="background:transparent; border:1px solid #ef4444; color:#ef4444; padding:8px; border-radius:8px;">🗑️</button>
-            </div>`;
+            <label class="label-endereco-salvo" style="display: flex; align-items: center; gap: 12px; background: #1c1c1e; padding: 12px; border-radius: 8px; border: 1px solid #323238; cursor: pointer; color: #f5f5f5; font-size: 0.875rem; transition: 0.3s;">
+              <input type="radio" name="endereco-selecionado" value="${end}" style="accent-color: #10b981; width: 18px; height: 18px;" onchange="destacarEndereco(this)">
+              <span style="flex: 1;">${end}</span>
+            </label>
+          `;
         });
       }
     });
 }
 
-async function deletarEnderecoSalvo(endereco, modo, pedidoId, valorTotal) {
-  if (!confirm("Remover este endereço?")) return;
-  try {
-    const res = await fetch(`${baseUrl}/perfil/endereco`, { method: "DELETE", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ endereco }) });
-    if (res.ok) { showToast("Endereço removido!", "success"); abrirModalEndereco(modo, pedidoId, valorTotal); }
-  } catch(e) { showToast("Erro.", "error"); }
-}
-
 function fecharModalEndereco() { const m = document.getElementById('modal-endereco'); if(m) m.remove(); }
 function mascaraCEP(i) { let v = i.value.replace(/\D/g, ""); if (v.length > 5) v = v.substring(0, 5) + "-" + v.substring(5, 8); i.value = v; }
 
-function destacarEndereco(r) {
-  document.querySelectorAll('.label-endereco-salvo').forEach(l => { l.style.borderColor = '#323238'; l.style.background = '#1c1c1e'; });
-  r.closest('label').style.borderColor = '#10b981'; r.closest('label').style.background = 'rgba(16, 185, 129, 0.1)';
-  document.getElementById("input-cep").value = ""; document.getElementById("input-rua").value = ""; 
-  document.getElementById("input-numero").value = ""; document.getElementById("input-complemento").value = "";
-  document.getElementById("input-bairro").value = ""; document.getElementById("input-cidade").value = "";
+// Função Visual: Pinta de verde a caixinha do endereço salvo quando ele é selecionado
+function destacarEndereco(radioElement) {
+  document.querySelectorAll('.label-endereco-salvo').forEach(label => {
+    label.style.borderColor = '#323238'; label.style.background = '#1c1c1e';
+  });
+  const parent = radioElement.closest('label');
+  parent.style.borderColor = '#10b981'; parent.style.background = 'rgba(16, 185, 129, 0.1)';
+  
+  // Limpa o formulário manual para não haver dúvidas
+  document.getElementById("input-cep").value = ""; document.getElementById("input-rua").value = ""; document.getElementById("input-numero").value = "";
+  document.getElementById("input-complemento").value = ""; document.getElementById("input-bairro").value = ""; document.getElementById("input-cidade").value = "";
+  document.getElementById("check-salvar-endereco").checked = false;
 }
 
+// Remove as cores de destaque se o usuário começar a digitar um endereço novo
 function desmarcarRadios() {
   document.querySelectorAll('input[name="endereco-selecionado"]').forEach(r => r.checked = false);
-  document.querySelectorAll('.label-endereco-salvo').forEach(l => { l.style.borderColor = '#323238'; l.style.background = '#1c1c1e'; });
+  document.querySelectorAll('.label-endereco-salvo').forEach(label => {
+    label.style.borderColor = '#323238'; label.style.background = '#1c1c1e';
+  });
 }
 
 async function buscarCEP() {
-  const inputCEP = document.getElementById("input-cep");
-  if(!inputCEP) return;
-  const cep = inputCEP.value.replace(/\D/g, "");
+  const cep = document.getElementById("input-cep").value.replace(/\D/g, "");
   if (cep.length !== 8) return showToast("CEP inválido!", "error");
-  const btn = document.getElementById("btn-buscar-cep");
-  if(btn) btn.innerText = "...";
+  const btn = document.getElementById("btn-buscar-cep"); btn.innerText = "...";
   try {
     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await res.json();
     if (!data.erro) {
-      document.getElementById("input-rua").value = data.logradouro;
-      document.getElementById("input-bairro").value = data.bairro;
+      document.getElementById("input-rua").value = data.logradouro; document.getElementById("input-bairro").value = data.bairro;
       document.getElementById("input-cidade").value = `${data.localidade} - ${data.uf}`;
       desmarcarRadios(); document.getElementById("input-numero").focus();
     }
-  } catch(e) {} finally { if(btn) btn.innerText = "Buscar"; }
+  } catch(e) {} finally { btn.innerText = "Buscar"; }
 }
 
 async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
   let enderecoFinal = "";
-  const radio = document.querySelector('input[name="endereco-selecionado"]:checked');
-  if (radio) {
-    enderecoFinal = radio.value;
+  const radioSelecionado = document.querySelector('input[name="endereco-selecionado"]:checked');
+
+  // Lógica de exclusividade perfeita! Se marcou a bolinha, usa o salvo. Se não, usa o digitado.
+  if (radioSelecionado) {
+    enderecoFinal = radioSelecionado.value;
   } else {
     const rua = document.getElementById("input-rua").value.trim(); const num = document.getElementById("input-numero").value.trim();
     const comp = document.getElementById("input-complemento").value.trim(); const bairro = document.getElementById("input-bairro").value.trim();
-    const city = document.getElementById("input-cidade").value.trim();
-    if (!rua || !num || !bairro || !city) return showToast("Preencha todos os campos!", "error");
-    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${city}`;
+    const cidade = document.getElementById("input-cidade").value.trim();
+
+    if (!rua || !num || !bairro || !cidade) return showToast("Preencha todos os campos do novo endereço ou selecione um endereço salvo!", "error");
+    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${cidade}`;
+
     if (document.getElementById("check-salvar-endereco").checked) {
       try { await fetch(`${baseUrl}/perfil/endereco`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ endereco: enderecoFinal }) }); } catch(e) {}
     }
   }
-  if (modo === 'pedido') despacharPedidoNovo(enderecoFinal, valorTotal);
-  else despacharMudancaRota(pedidoId, enderecoFinal);
+
+  if (modo === 'pedido') { despacharPedidoNovo(enderecoFinal, valorTotal); } 
+  else if (modo === 'redefinir') { despacharMudancaRota(pedidoId, enderecoFinal); }
 }
 
-// ==========================================
-// RASTREAMENTO E CANCELAMENTO
-// ==========================================
 async function despacharPedidoNovo(endereco, total) {
   try {
     const res = await fetch(`${baseUrl}/pedidos`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ itens: itensParaComprarGlobal.join(', '), itensContagem: itensParaComprarGlobal.length, valorTotal: total.toFixed(2), endereco }) });
@@ -240,9 +400,14 @@ async function despacharPedidoNovo(endereco, total) {
 async function despacharMudancaRota(id, endereco) {
   try {
     const res = await fetch(`${baseUrl}/pedidos/${id}/endereco-taxa`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ novoEndereco: endereco }) });
-    if (res.ok) { fecharModalEndereco(); showToast("Rota atualizada!", "success"); carregarPedidosShopper(); }
+    if (res.ok) { fecharModalEndereco(); showToast("Rota atualizada (+R$ 3,00)!", "success"); carregarPedidosShopper(); }
   } catch(e) {}
 }
+
+// ==========================================
+// RASTREAMENTO DO CLIENTE E CANCELAMENTOS
+// ==========================================
+let timeoutPollingCliente = null;
 
 async function carregarPedidosShopper() {
   const container = document.getElementById("lista-pedidos-shopper");
@@ -250,15 +415,91 @@ async function carregarPedidosShopper() {
   try {
     const res = await fetch(`${baseUrl}/pedidos/cliente`, { headers: { "Authorization": `Bearer ${obterToken()}` } });
     const pedidos = await res.json();
-    if (pedidos.length === 0) { container.innerHTML = `<div class="historico-card" style="padding:16px;">Nenhum pedido ativo</div>`; return; }
-    container.innerHTML = pedidos.map(p => `
-      <div class="historico-card" style="padding: 16px; margin-bottom: 20px;">
-        <p><strong>Pedido:</strong> ${p.itens}</p>
-        <p><strong>Destino:</strong> ${p.endereco}</p>
-        ${p.status !== 'entregue' ? `<button onclick="abrirModalEndereco('redefinir', '${p._id}', 0)">Mudar Rota</button>` : ''}
-      </div>`).join('');
+    if (pedidos.length === 0) { container.innerHTML = `<div class="historico-card" style="padding:16px;"><h4 style="color:#f5f5f5;">Nenhum pedido ativo</h4></div>`; return; }
+
+    container.innerHTML = pedidos.map(p => {
+      let statusText = "Buscando motorista..."; let corStatus = "#FFB800";
+      if (p.status === 'em_rota') { statusText = "Motorista a caminho!"; corStatus = "#10b981"; }
+      else if (p.status === 'entregue') { statusText = "Entregue!"; corStatus = "#3b82f6"; }
+
+      return `
+        <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid ${corStatus};">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Shopper</h4>
+              <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} itens • R$ ${Number(p.valorTotal).toFixed(2).replace('.', ',')}</span>
+            </div>
+            <span style="color: ${corStatus}; font-weight: 600; font-size: 0.9rem;">${statusText}</span>
+          </div>
+          ${p.status !== 'entregue' ? `
+          <div style="margin-top: 15px; width: 100%; height: 200px; border-radius: 12px; overflow: hidden;">
+            <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(p.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);"></iframe>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button onclick="abrirModalEndereco('redefinir', '${p._id}', 0)" style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight:600; cursor:pointer; font-size: 0.85rem;">Mudar Rota (+R$ 3,00)</button>
+            <button onclick="cancelarPedido('${p._id}')" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; font-weight:600; cursor:pointer; font-size: 0.85rem;">Cancelar Pedido</button>
+          </div>` : ''}
+        </div>`;
+    }).join('');
   } catch(e) {}
   clearTimeout(timeoutPollingCliente); timeoutPollingCliente = setTimeout(carregarPedidosShopper, 3000);
 }
 
-// [Manter o restante das funções: carregarHistorico, enviarAvaliacao, carregarPerfil, alterarSenha, excluirConta como estavam...]
+async function cancelarPedido(id) {
+  if (!confirm("Deseja mesmo cancelar este pedido?")) return;
+  try {
+    const res = await fetch(`${baseUrl}/pedidos/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
+    if (res.ok) { showToast("Cancelado!", "success"); carregarPedidosShopper(); }
+  } catch (e) {}
+}
+
+// ==========================================
+// RESTANTE DO CÓDIGO (HISTÓRICO E PERFIL)
+// ==========================================
+async function carregarHistorico() {
+  try {
+    const res = await fetch(API, { headers: { "Authorization": `Bearer ${obterToken()}` } });
+    const data = await res.json(); receitasGlobais = Array.isArray(data) ? data : [];
+    const lista = document.getElementById("lista-historico"); if (!lista) return; lista.innerHTML = "";
+    receitasGlobais.forEach(r => {
+      lista.innerHTML += `<div class="historico-card" style="margin-bottom:16px; padding:16px; display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:16px;"><img src="${r.imagem || gerarImagemReceita(r.nome, r.link)}" style="width:60px; height:60px; border-radius:8px; object-fit:cover;"><div style="display:flex; flex-direction:column; gap:6px;"><h3 style="font-size:1.125rem; font-weight:700; color:#f5f5f5;">${r.nome}</h3><span style="color:#10b981; font-size:0.875rem;">Ativo</span></div></div><button class="h-icon-btn" onclick="verIngredientes('${r._id}')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button></div>`;
+    });
+  } catch (e) {}
+}
+
+let notaSelecionada = 0;
+function hoverEstrela(v) { document.querySelectorAll(".star").forEach(s => { s.style.color = s.getAttribute("data-value") <= v ? "#FFB800" : "#323238"; }); }
+function resetEstrelas() { hoverEstrela(notaSelecionada); }
+function selecionarNota(v) { notaSelecionada = v; hoverEstrela(v); }
+async function enviarAvaliacao() {
+  if (!notaSelecionada) return showToast("Selecione uma nota!", "error");
+  try {
+    const res = await fetch(`${baseUrl}/avaliacoes`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nota: notaSelecionada, comentario: document.getElementById("comentario-avaliacao").value.trim() }) });
+    if (res.ok) { notaSelecionada = 0; resetEstrelas(); document.getElementById("comentario-avaliacao").value = ""; showToast("Enviada!", "success"); navegar('confirmacao', document.querySelectorAll('.menu button')[7]); }
+  } catch(e) {}
+}
+
+function carregarPerfil() {
+  const token = obterToken();
+  if (token !== "jwt-fake") {
+    try { document.getElementById('perfil-username').innerText = JSON.parse(atob(token.split('.')[1])).username || "Usuário"; } catch(e) {}
+  }
+}
+
+async function alterarSenha() {
+  const senhaAtual = document.getElementById("senha-atual").value.trim(); const novaSenha = document.getElementById("nova-senha").value.trim();
+  try {
+    const res = await fetch(`${baseUrl}/perfil/senha`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ senhaAtual, novaSenha }) });
+    const d = await res.json(); if (res.ok) { showToast(d.mensagem, "success"); document.getElementById("senha-atual").value = ""; document.getElementById("nova-senha").value = ""; }
+  } catch(e) {}
+}
+
+async function excluirConta() {
+  if (!confirm("Excluir conta permanentemente?")) return;
+  try {
+    const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
+    if (res.ok) { showToast("Conta excluída!", "success"); setTimeout(() => sair(), 1500); }
+  } catch(e) {}
+}
+
+carregar();
