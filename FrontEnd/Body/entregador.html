@@ -14,7 +14,7 @@
       <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #10b981;">Painel do Estafeta</h2>
       <span style="font-size: 0.85rem; color: #a3a3a3;">Modo: Salário Fixo Ativo</span>
     </div>
-    <button onclick="sair()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">Sair</button>
+    <button onclick="sair()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Sair</button>
   </div>
 
   <div class="container" style="max-width: 600px; margin: 20px auto; padding: 0 16px;">
@@ -22,25 +22,24 @@
     <div id="secao-chamadas">
       <h3 style="font-size: 1.1rem; font-weight: 600; color: #f5f5f5; margin-bottom: 16px;">Pedidos Disponíveis na Região</h3>
       <div id="lista-chamadas-disponiveis">
-        </div>
+        <p style="color: #737373; text-align: center; margin-top: 20px;">A procurar chamadas na base de dados...</p>
+      </div>
     </div>
 
     <div id="secao-rastreio" style="display: none;">
-      <div class="historico-card" style="padding: 20px; border-left: 4px solid #10b981;">
-        <h3 style="margin-top: 0; color: #10b981;">Pedido Aceite • Em Andamento</h3>
-        <p id="detalhes-entrega" style="color: #e5e5e5; font-size: 0.95rem;"></p>
+      <div class="historico-card" style="padding: 20px; border-left: 4px solid #10b981; background: #202024; border-radius: 12px; border: 1px solid #323238;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #10b981; font-weight: 700;">Pedido Aceite • Rota Ativa</h3>
+        <p id="detalhes-entrega" style="color: #e5e5e5; font-size: 0.95rem; line-height: 1.6;"></p>
         
-        <div style="margin: 15px 0; width: 100%; height: 220px; border-radius: 12px; overflow: hidden; border: 1px solid #323238;">
-          <iframe src="http://maps.google.com/maps?q=Campinas&t=&z=14&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        <div style="margin: 20px 0; width: 100%; height: 250px; border-radius: 12px; overflow: hidden; border: 1px solid #323238;">
+          <iframe src="https://maps.google.com/maps?q=Sumaré,SP&t=&z=14&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
         </div>
 
-        <button onclick="confirmarEntrega()" class="btn-primary" style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar Entrega ao Cliente</button>
+        <button onclick="confirmarEntrega()" class="btn-primary" style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: background 0.3s;">Finalizar Entrega no Destino</button>
       </div>
     </div>
 
   </div>
-
-  <div id="toast-container" style="position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;"></div>
 
   <script>
     if (localStorage.getItem('logado') !== 'true' || localStorage.getItem('perfil') !== 'entregador') {
@@ -52,86 +51,104 @@
       window.location.href = 'login.html';
     }
 
-    // Banco de dados simulado de chamados para rota rotativa (Se rejeitar, passa para o próximo)
-    let chamadosDisponiveis = [
-      { id: 1084, cliente: "Diogo Sanz", itens: "Ingredientes para Massa Carbonara", endereco: "Av. Rebouças, Centro, Sumaré" },
-      { id: 3291, cliente: "Lucas Neres", itens: "Ingredientes para Bolo de Cenoura", endereco: "Rua Amizade, Nova Veneza, Sumaré" }
-    ];
+    let baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+    function obterToken() { return localStorage.getItem('token'); }
 
     let pedidoAtual = null;
-
-    function renderizarChamados() {
-      const container = document.getElementById("lista-chamadas-disponiveis");
-      if (chamadosDisponiveis.length === 0) {
-        container.innerHTML = `<p style="color: #737373; text-align: center; margin-top: 4px;">Nenhum chamado ativo no momento. Aguardando novos pedidos...</p>`;
-        return;
-      }
-
-      container.innerHTML = chamadosDisponiveis.map(c => `
-        <div class="historico-card" id="card-${c.id}" style="padding: 16px; margin-bottom: 16px; background: #202024; border: 1px solid #323238; border-radius: 12px;">
-          <h4 style="margin: 0 0 8px 0; color: #f5f5f5;">Chamado Shopper #${c.id}</h4>
-          <p style="margin: 0 0 4px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Cliente:</strong> ${c.cliente}</p>
-          <p style="margin: 0 0 4px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Carga:</strong> ${c.itens}</p>
-          <p style="margin: 0 0 16px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Destino:</strong> ${c.endereco}</p>
-          
-          <div style="display: flex; gap: 10px;">
-            <button onclick="aceitarChamado(${c.id})" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Aceitar Chamado</button>
-            <button onclick="recusarChamado(${c.id})" style="flex: 1; padding: 12px; background: #323238; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; cursor: pointer;">Recusar</button>
-          </div>
-        </div>
-      `).join('');
-    }
+    let pollingChamadasTimeout = null;
 
     function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
+      let container = document.getElementById('toast-container');
+      if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.style.cssText = 'position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;';
+          document.body.appendChild(container);
+      }
       const toast = document.createElement('div');
       const bgColor = type === 'success' ? '#10b981' : '#ef4444';
-      
-      toast.style.cssText = `background: #202024; border-left: 4px solid ${bgColor}; color: #f5f5f5; padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.95rem; font-weight: 500; width: max-content; pointer-events: auto;`;
+      toast.style.cssText = `background: #202024; border-left: 4px solid ${bgColor}; color: #f5f5f5; padding: 16px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 500; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto;`;
       toast.innerText = message;
       container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      setTimeout(() => toast.remove(), 3500);
     }
 
-    function aceitarChamado(id) {
-      pedidoAtual = chamadosDisponiveis.find(c => c.id === id);
-      document.getElementById("secao-chamadas").style.display = "none";
-      document.getElementById("secao-rastreio").style.display = "block";
-      document.getElementById("detalhes-entrega").innerHTML = `
-        <strong>Cliente:</strong> ${pedidoAtual.cliente}<br>
-        <strong>Itens do Pedido:</strong> ${pedidoAtual.itens}<br>
-        <strong>Endereço de Entrega:</strong> ${pedidoAtual.endereco}
-      `;
-      showToast("Corrida aceita! Siga a rota indicada no mapa.", "success");
-      
-      // Avisa o localStorage que o motorista X aceitou a corrida (para sincronizar o rastreio do cliente)
-      localStorage.setItem('motorista_status', 'em_rota');
-      localStorage.setItem('pedido_ativo_id', id);
+    async function buscarChamadas() {
+      if (pedidoAtual) return; // Pausa o radar se já estou numa entrega
+
+      try {
+        const res = await fetch(`${baseUrl}/pedidos/disponiveis`);
+        if (!res.ok) throw new Error("Falha na API");
+        const chamados = await res.json();
+
+        const container = document.getElementById("lista-chamadas-disponiveis");
+        if (chamados.length === 0) {
+          container.innerHTML = `<p style="color: #737373; text-align: center; margin-top: 20px;">Nenhum chamado pendente no sistema. Aguardando...</p>`;
+        } else {
+          container.innerHTML = chamados.map(c => `
+            <div class="historico-card" style="padding: 16px; margin-bottom: 16px; background: #202024; border: 1px solid #323238; border-radius: 12px;">
+              <h4 style="margin: 0 0 8px 0; color: #f5f5f5;">Chamado Shopper #${c._id.substring(c._id.length - 4)}</h4>
+              <p style="margin: 0 0 4px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Cliente:</strong> ${c.clienteNome}</p>
+              <p style="margin: 0 0 4px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Carga:</strong> ${c.itensContagem} Produtos</p>
+              <p style="margin: 0 0 16px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Destino:</strong> ${c.endereco}</p>
+              <button onclick="aceitarChamado('${c._id}')" style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Aceitar e Iniciar Rota</button>
+            </div>
+          `).join('');
+        }
+      } catch(e) {
+          console.error("Erro ao buscar chamadas:", e);
+      }
+
+      // O radar do motorista procura novas chamadas a cada 3 segundos
+      clearTimeout(pollingChamadasTimeout);
+      pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
     }
 
-    function recusarChamado(id) {
-      // Remove o chamado da lista do motorista atual e "simula" que foi para outro funcionário
-      chamadosDisponiveis = chamadosDisponiveis.filter(c => c.id !== id);
-      renderizarChamados();
-      showToast("Chamado recusado. Repassando para o próximo entregador disponível.", "error");
+    async function aceitarChamado(id) {
+      try {
+        const res = await fetch(`${baseUrl}/pedidos/${id}/aceitar`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${obterToken()}` }
+        });
+        const dados = await res.json();
+
+        if (res.ok) {
+          pedidoAtual = dados.pedido;
+          document.getElementById("secao-chamadas").style.display = "none";
+          document.getElementById("secao-rastreio").style.display = "block";
+          document.getElementById("detalhes-entrega").innerHTML = `
+            <strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br>
+            <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
+            <strong>Endereço:</strong> ${pedidoAtual.endereco}
+          `;
+          showToast("Corrida Aceite! O Cliente já está a ver o seu mapa.", "success");
+        } else {
+          // Erro atómico: Outro entregador clicou um milissegundo antes!
+          showToast(dados.mensagem || "Erro ao aceitar corrida", "error"); 
+          buscarChamadas();
+        }
+      } catch(e) { showToast("Erro de ligação com a central.", "error"); }
     }
 
-    function confirmarEntrega() {
-      showToast("Entrega finalizada com sucesso! Bom trabalho.", "success");
-      localStorage.setItem('motorista_status', 'entregue');
-      
-      // Reseta a interface para o próximo chamado
-      setTimeout(() => {
+    async function confirmarEntrega() {
+      try {
+        await fetch(`${baseUrl}/pedidos/${pedidoAtual._id}/entregar`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${obterToken()}` }
+        });
+
+        showToast("Entrega Finalizada! Excelente trabalho.", "success");
+        pedidoAtual = null;
         document.getElementById("secao-rastreio").style.display = "none";
         document.getElementById("secao-chamadas").style.display = "block";
-        chamadosDisponiveis = chamadosDisponiveis.filter(c => c.id !== pedidoAtual.id);
-        pedidoAtual = null;
-        renderizarChamados();
-      }, 1000);
+        buscarChamadas(); // Reinicia o radar para o próximo trabalho
+      } catch(e) {
+          showToast("Erro ao finalizar entrega.", "error");
+      }
     }
 
-    // Inicialização da lista
-    renderizarChamados();
+    // Inicia a aplicação do motorista
+    buscarChamadas(); 
   </script>
 </body>
 </html>

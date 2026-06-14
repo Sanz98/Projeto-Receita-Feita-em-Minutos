@@ -529,96 +529,111 @@ function atualizarListaCompras() {
 }
 
 // ==========================================
-// RASTREAMENTO DINÂMICO ESTILO UBER/iFOOD
+// RASTREAMENTO DINÂMICO LIGADO AO BACKEND MONGODB
 // ==========================================
-function fecharPedidoShopper(valorTotal) {
-  if (itensParaComprarGlobal.length === 0) return showToast("Seu carrinho de compras está vazio!", "error");
+async function fecharPedidoShopper(valorTotal) {
+  if (itensParaComprarGlobal.length === 0) return showToast("O seu carrinho de compras está vazio!", "error");
 
-  const numeroPedido = Math.floor(Math.random() * (9999 - 1000) + 1000);
-  const novoPedido = {
-    id: numeroPedido,
-    itensContagem: itensParaComprarGlobal.length,
-    total: valorTotal.toFixed(2),
-    status: "Em rota de entrega",
-    horaCriacao: Date.now() 
-  };
+  try {
+    const res = await fetch(`${baseUrl}/pedidos`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${obterToken()}`
+      },
+      body: JSON.stringify({
+        itens: itensParaComprarGlobal.join(', '),
+        itensContagem: itensParaComprarGlobal.length,
+        valorTotal: valorTotal.toFixed(2)
+      })
+    });
 
-  let pedidosAtuais = JSON.parse(localStorage.getItem('pedidos_shopper') || "[]");
-  pedidosAtuais.unshift(novoPedido);
-  localStorage.setItem('pedidos_shopper', JSON.stringify(pedidosAtuais));
-  
-  // Reinicia o status do motorista para uma nova entrega começar a procurar
-  localStorage.setItem('motorista_status', 'aguardando');
-
-  itensParaComprarGlobal = []; 
-  showToast("Pedido confirmado! A procurar entregadores...", "success");
-  navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+    if (res.ok) {
+      itensParaComprarGlobal = []; 
+      showToast("Pedido confirmado! A enviar para a central de estafetas...", "success");
+      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+    } else {
+      showToast("Erro ao criar pedido no servidor.", "error");
+    }
+  } catch(e) {
+    showToast("Falha de ligação à central de entregas.", "error");
+  }
 }
 
-function carregarPedidosShopper() {
+let timeoutPollingCliente = null;
+
+async function carregarPedidosShopper() {
   const container = document.getElementById("lista-pedidos-shopper");
   if (!container) return;
 
-  const pedidos = JSON.parse(localStorage.getItem('pedidos_shopper') || "[]");
-
-  if (pedidos.length === 0) {
-    container.innerHTML = `
-      <div class="historico-card" style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h4 style="font-weight: 700; color: #f5f5f5;">Nenhum pedido ativo</h4>
-          <span style="font-size: 0.85rem; color: #a3a3a3;">Monte uma lista de compras e confirme o pedido.</span>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  // Verifica o status selecionado na interface do motorista em tempo real
-  const statusDoMotorista = localStorage.getItem('motorista_status') || 'aguardando';
-
-  container.innerHTML = pedidos.map(p => {
-    const minutosDecorridos = Math.floor((Date.now() - (p.horaCriacao || Date.now())) / 60000);
-    let tempoRestante = 15 - minutosDecorridos;
+  try {
+    const res = await fetch(`${baseUrl}/pedidos/cliente`, {
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
     
-    let statusText = "A procurar entregador disponível...";
-    let corStatus = "#FFB800";
-    let tempoText = "Calculando...";
+    if (!res.ok) return;
+    const pedidos = await res.json();
 
-    if (statusDoMotorista === 'em_rota') {
-      statusText = "Entregador a caminho!";
-      corStatus = "#10b981";
-      tempoText = `Chega em ${tempoRestante > 0 ? tempoRestante : 2} min`;
-    } else if (statusDoMotorista === 'entregue' || tempoRestante <= 0) {
-      statusText = "Entregue e Finalizado";
-      corStatus = "#3b82f6";
-      tempoText = "Concluído";
+    if (pedidos.length === 0) {
+      container.innerHTML = `
+        <div class="historico-card" style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h4 style="font-weight: 700; color: #f5f5f5;">Nenhum pedido ativo</h4>
+            <span style="font-size: 0.85rem; color: #a3a3a3;">Monte uma lista de compras e confirme o pedido.</span>
+          </div>
+        </div>
+      `;
+      clearTimeout(timeoutPollingCliente);
+      timeoutPollingCliente = setTimeout(carregarPedidosShopper, 5000);
+      return;
     }
 
-    return `
-      <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid ${corStatus}; display: block;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Shopper #${p.id}</h4>
-            <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos cadastrados</span>
-          </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-            <span style="color: ${corStatus}; font-weight: 600; font-size: 0.9rem; text-align: right;">${statusText}</span>
-            <span style="font-size: 0.85rem; color: #FFB800; font-weight: 700;">⏱ ${tempoText}</span>
-          </div>
-        </div>
-        
-        <div style="margin-top: 15px; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; border: 1px solid #323238; position: relative;">
-          <iframe src="http://maps.google.com/maps?q=-22.8205,-47.2662&t=&z=14&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
-          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(28, 28, 30, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #323238; color: #f5f5f5;">
-            📍 Rastreamento GPS Satélite Ativo
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+    container.innerHTML = pedidos.map(p => {
+      let statusText = "A procurar entregador disponível...";
+      let corStatus = "#FFB800";
+      let tempoText = "Calculando...";
 
-  // Atualiza a tela a cada 5 segundos para refletir as mudanças do entregador rapidamente!
-  setTimeout(carregarPedidosShopper, 5000);
+      if (p.status === 'em_rota') {
+        statusText = "Entregador a caminho!";
+        corStatus = "#10b981";
+        tempoText = `Chega em breve`;
+      } else if (p.status === 'entregue') {
+        statusText = "Entregue e Finalizado";
+        corStatus = "#3b82f6";
+        tempoText = "Concluído";
+      }
+
+      return `
+        <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid ${corStatus}; display: block;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Shopper</h4>
+              <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos • R$ ${p.valorTotal.toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+              <span style="color: ${corStatus}; font-weight: 600; font-size: 0.9rem; text-align: right;">${statusText}</span>
+              <span style="font-size: 0.85rem; color: #FFB800; font-weight: 700;">⏱ ${tempoText}</span>
+            </div>
+          </div>
+          
+          ${p.status !== 'entregue' ? `
+          <div style="margin-top: 15px; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; border: 1px solid #323238; position: relative;">
+            <iframe src="https://maps.google.com/maps?q=Sumaré,SP&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
+            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(28, 28, 30, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #323238; color: #f5f5f5;">
+              📍 Rastreamento GPS Satélite Ativo
+            </div>
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+  } catch(e) {
+    console.error("Erro ao sincronizar pedidos:", e);
+  }
+
+  // A Mágica do Polling (Ouve o MongoDB a cada 3 segundos)
+  clearTimeout(timeoutPollingCliente);
+  timeoutPollingCliente = setTimeout(carregarPedidosShopper, 3000);
 }
 
 // ==========================================

@@ -22,9 +22,11 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 app.use(cors());
 app.use(express.json());
 
+// Importação dos Modelos (Incluindo o novo Modelo de Pedidos)
 const User = require('./models/User');
 const Receita = require('./models/Receita');
 const Avaliacao = require('./models/Avaliacao');
+const Pedido = require('./models/Pedido');
 
 app.use(express.static(path.join(__dirname, "../FrontEnd/Body")));
 app.use(express.static(path.join(__dirname, "../FrontEnd")));
@@ -47,7 +49,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     let { link } = req.body;
     if (!link) return res.status(400).json({ mensagem: "Por favor, forneça um link válido." });
 
-    // --- FILTRO INTELIGENTE MOBILE ---
     let urlLimpa = link;
     let tituloExtraidoDoTexto = "";
 
@@ -69,7 +70,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     link = urlLimpa;
     let tituloOficial = tituloExtraidoDoTexto;
 
-    // 1. CAMADA DE CACHE
     const receitaExistente = await Receita.findOne({ link: link });
     if (receitaExistente) {
       return res.status(200).json({ 
@@ -80,7 +80,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       });
     }
 
-    // 2. CAMADA DE SCRAPER (Para Blogs famosos)
     try {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
@@ -97,12 +96,9 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Scraper direto falhou. A tentar leitura universal...");
     }
 
-    // 3. CAMADA DE LEITURA UNIVERSAL E PROFUNDA
     let contextoAdicional = "";
     let imagemCapturada = "";
 
-    // A) NOVIDADE: OEMBED API (O Segredo para YouTube, TikTok e outras Redes Sociais)
-    // Ultrapassa bloqueios de HTML para roubar o Título Exato Oficial do vídeo
     if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
       try {
         let oembedUrl = "";
@@ -119,7 +115,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
           if (oembedRes.ok) {
             const oembedData = await oembedRes.json();
             if (oembedData && oembedData.title) {
-              tituloOficial = oembedData.title; // Título Exato Confirmado!
+              tituloOficial = oembedData.title; 
             }
             if (oembedData && oembedData.thumbnail_url) {
               imagemCapturada = oembedData.thumbnail_url;
@@ -131,7 +127,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // B) ROUBAR o HTML de QUALQUER link (Se não for rede social, é um blog ou site)
     try {
       const response = await fetch(link, {
         headers: {
@@ -144,7 +139,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       if (contentType && contentType.includes("text/html")) {
         const html = await response.text();
         
-        // Se o oEmbed não pegou o título, fazemos uma varredura extrema no HTML
         if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
           const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) 
                             || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i)
@@ -167,7 +161,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
             }
           }
 
-          // NOVIDADE: Busca por H1 em blogs obscuros
           if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
             const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
             if (h1Match && h1Match[1]) {
@@ -199,7 +192,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Falha de rede ao capturar HTML. Proteção do site ativada.");
     }
 
-    // C) Tratamento de Legendas para YouTube
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
@@ -218,7 +210,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // D) Fallback Final de Domínio (Acontecerá apenas se o link for completamente quebrado)
     if (!tituloOficial || /^(youtube|tiktok|instagram|receita via)$/i.test(tituloOficial.trim().toLowerCase())) {
       try {
         const urlObj = new URL(link);
@@ -229,7 +220,6 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // 4. CAMADA DE IA (GROQ) COM MODO ESTRICTO JSON_OBJECT
     const prompt = `Sua missão é extrair ou deduzir os ingredientes da receita.
     Link: ${link}
     Título da Receita: ${tituloOficial}
@@ -255,14 +245,10 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     let dadosFormatados;
     try {
       dadosFormatados = JSON.parse(textoResposta);
-      
-      // Validação final de segurança para garantir que o título exato foi respeitado
       if (!dadosFormatados.nome || dadosFormatados.nome.toLowerCase().includes("desconhecid")) {
         dadosFormatados.nome = tituloOficial;
       }
-      
       dadosFormatados.imagem = imagemCapturada || ""; 
-
     } catch (parseError) {
       console.log("Erro Crítico de Parse:", textoResposta);
       dadosFormatados = {
@@ -281,6 +267,91 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     } else {
       res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita." });
     }
+  }
+});
+
+// ==========================================
+// SISTEMA REAL DE DELIVERY (SHOPPER / ENTREGADOR)
+// ==========================================
+
+// 1. Cliente cria um pedido com os ingredientes selecionados
+app.post('/pedidos', async (req, res) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
+    const user = jwt.verify(authHeader.split(" ")[1], SECRET);
+    
+    const { itens, itensContagem, valorTotal } = req.body;
+    
+    const novoPedido = new Pedido({
+      clienteId: user.id,
+      clienteNome: user.username,
+      itens: itens,
+      itensContagem: itensContagem,
+      valorTotal: valorTotal,
+      endereco: "Av. Rebouças, Centro, Sumaré" // Endereço predefinido para a simulação
+    });
+    
+    await novoPedido.save();
+    res.status(201).json({ mensagem: "Pedido enviado para a central de estafetas!" });
+  } catch (err) { 
+    res.status(500).json({ mensagem: "Erro ao criar pedido." }); 
+  }
+});
+
+// 2. Cliente busca o estado do seu pedido em tempo real
+app.get('/pedidos/cliente', async (req, res) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
+    const user = jwt.verify(authHeader.split(" ")[1], SECRET);
+    
+    const pedidos = await Pedido.find({ clienteId: user.id }).sort({ horaCriacao: -1 });
+    res.status(200).json(pedidos);
+  } catch (err) { 
+    res.status(500).json({ mensagem: "Erro ao procurar pedidos." }); 
+  }
+});
+
+// 3. Entregador busca os pedidos disponíveis na região (Status: aguardando)
+app.get('/pedidos/disponiveis', async (req, res) => {
+  try {
+    const pedidos = await Pedido.find({ status: 'aguardando' }).sort({ horaCriacao: -1 });
+    res.status(200).json(pedidos);
+  } catch (err) { 
+    res.status(500).json({ mensagem: "Erro ao carregar chamadas." }); 
+  }
+});
+
+// 4. Entregador ACEITA o pedido (Verificação Atómica de Concorrência)
+app.put('/pedidos/:id/aceitar', async (req, res) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) return res.status(401).json({ mensagem: "Acesso negado." });
+    const user = jwt.verify(authHeader.split(" ")[1], SECRET);
+    
+    // Atualiza apenas se ainda estiver 'aguardando' (impede dois motoristas de pegarem a mesma corrida)
+    const pedido = await Pedido.findOneAndUpdate(
+      { _id: req.params.id, status: 'aguardando' },
+      { status: 'em_rota', entregadorId: user.id },
+      { new: true }
+    );
+
+    if (!pedido) return res.status(400).json({ mensagem: "Tarde demais! Outro estafeta já aceitou esta corrida." });
+    
+    res.status(200).json({ mensagem: "Corrida aceite! Siga a rota indicada.", pedido });
+  } catch (err) { 
+    res.status(500).json({ mensagem: "Erro ao aceitar corrida." }); 
+  }
+});
+
+// 5. Entregador FINALIZA a entrega no destino
+app.put('/pedidos/:id/entregar', async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, { status: 'entregue' });
+    res.status(200).json({ mensagem: "Entrega finalizada com sucesso." });
+  } catch (err) { 
+    res.status(500).json({ mensagem: "Erro ao finalizar a corrida." }); 
   }
 });
 
@@ -371,5 +442,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema API oEmbed ativado para captura de Títulos Inquebrável!");
+  console.log("✅ API no Modo JSON Estrito + Sistema Integrado de Delivery Ativado!");
 });
