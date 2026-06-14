@@ -40,7 +40,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO AVANÇADA (100% BLINDADA MODO JSON)
+// ROTA DE EXTRAÇÃO AVANÇADA (TÍTULOS EXATOS + MODO JSON)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -80,7 +80,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       });
     }
 
-    // 2. CAMADA DE SCRAPER
+    // 2. CAMADA DE SCRAPER (Para Blogs famosos)
     try {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
@@ -94,14 +94,44 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         });
       }
     } catch (scraperErr) {
-      console.log("Scraper direto falhou. A tentar leitura profunda...");
+      console.log("Scraper direto falhou. A tentar leitura universal...");
     }
 
     // 3. CAMADA DE LEITURA UNIVERSAL E PROFUNDA
     let contextoAdicional = "";
     let imagemCapturada = "";
 
-    // A) ROUBAR o HTML de QUALQUER link primeiro
+    // A) NOVIDADE: OEMBED API (O Segredo para YouTube, TikTok e outras Redes Sociais)
+    // Ultrapassa bloqueios de HTML para roubar o Título Exato Oficial do vídeo
+    if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
+      try {
+        let oembedUrl = "";
+        if (link.includes("youtube.com") || link.includes("youtu.be")) {
+          oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(link)}&format=json`;
+        } else if (link.includes("tiktok.com")) {
+          oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`;
+        } else if (link.includes("vimeo.com")) {
+          oembedUrl = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(link)}`;
+        }
+
+        if (oembedUrl) {
+          const oembedRes = await fetch(oembedUrl);
+          if (oembedRes.ok) {
+            const oembedData = await oembedRes.json();
+            if (oembedData && oembedData.title) {
+              tituloOficial = oembedData.title; // Título Exato Confirmado!
+            }
+            if (oembedData && oembedData.thumbnail_url) {
+              imagemCapturada = oembedData.thumbnail_url;
+            }
+          }
+        }
+      } catch(e) {
+        console.log("oEmbed não suportado ou falhou.");
+      }
+    }
+
+    // B) ROUBAR o HTML de QUALQUER link (Se não for rede social, é um blog ou site)
     try {
       const response = await fetch(link, {
         headers: {
@@ -114,9 +144,12 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       if (contentType && contentType.includes("text/html")) {
         const html = await response.text();
         
-        if (!tituloOficial) {
+        // Se o oEmbed não pegou o título, fazemos uma varredura extrema no HTML
+        if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
           const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) 
-                            || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i);
+                            || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i)
+                            || html.match(/<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i);
+          
           if (ogTitleMatch && ogTitleMatch[1]) {
             let titleWeb = ogTitleMatch[1].trim();
             if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb)) {
@@ -124,7 +157,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
             }
           }
           
-          if (!tituloOficial) {
+          if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
             const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
             if (titleMatch && titleMatch[1]) {
               let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '');
@@ -133,12 +166,22 @@ app.post('/receitas/extrair-ia', async (req, res) => {
               }
             }
           }
+
+          // NOVIDADE: Busca por H1 em blogs obscuros
+          if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
+            const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+            if (h1Match && h1Match[1]) {
+              tituloOficial = h1Match[1].replace(/<[^>]+>/g, '').trim(); 
+            }
+          }
         }
         
-        const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-                      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-        if (imgMatch && imgMatch[1]) {
-          imagemCapturada = imgMatch[1];
+        if (!imagemCapturada) {
+          const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+          if (imgMatch && imgMatch[1]) {
+            imagemCapturada = imgMatch[1];
+          }
         }
 
         const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -156,7 +199,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Falha de rede ao capturar HTML. Proteção do site ativada.");
     }
 
-    // B) Tratamento especial para YouTube
+    // C) Tratamento de Legendas para YouTube
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
@@ -175,8 +218,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // C) Fallback de Domínio (Evita a mensagem "Receita Desconhecida")
-    if (!tituloOficial) {
+    // D) Fallback Final de Domínio (Acontecerá apenas se o link for completamente quebrado)
+    if (!tituloOficial || /^(youtube|tiktok|instagram|receita via)$/i.test(tituloOficial.trim().toLowerCase())) {
       try {
         const urlObj = new URL(link);
         const dominio = urlObj.hostname.replace('www.', '');
@@ -193,7 +236,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     Texto Extraído: ${contextoAdicional || "Indisponível"}
     
     REGRAS:
-    1. O "nome" DEVE ser OBRIGATORIAMENTE o "Título da Receita".
+    1. O "nome" DEVE ser EXATAMENTE o "Título da Receita" fornecido acima. Não o altere nem invente.
     2. Formate os ingredientes numa única linha, separados por vírgula.
     3. MODO SOBREVIVÊNCIA: Se não houver ingredientes no Texto, você DEVE DEDUZIR uma lista realista baseada apenas no "Título da Receita". Nunca devolva ingredientes vazios.`;
 
@@ -204,7 +247,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       ],
       model: "llama-3.1-8b-instant", 
       temperature: 0.1, 
-      response_format: { type: "json_object" } // <--- ESTA É A TRAVA DE SEGURANÇA MÁXIMA
+      response_format: { type: "json_object" }
     });
 
     let textoResposta = chatCompletion.choices[0]?.message?.content || "{}";
@@ -213,7 +256,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     try {
       dadosFormatados = JSON.parse(textoResposta);
       
-      // Impede que o título seja vazio
+      // Validação final de segurança para garantir que o título exato foi respeitado
       if (!dadosFormatados.nome || dadosFormatados.nome.toLowerCase().includes("desconhecid")) {
         dadosFormatados.nome = tituloOficial;
       }
@@ -224,7 +267,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Erro Crítico de Parse:", textoResposta);
       dadosFormatados = {
         nome: tituloOficial,
-        ingredientes: "Ovos, Leite, Farinha, Açúcar, Manteiga (Ingredientes genéricos deduzidos)",
+        ingredientes: "Ovos, Leite, Farinha, Açúcar, Manteiga, Sal, Óleo, Água (Ingredientes deduzidos devido a falha do site)",
         imagem: imagemCapturada || ""
       };
     }
@@ -328,5 +371,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ API no Modo JSON Estrito ativada! Adeus respostas falhadas e títulos desconhecidos.");
+  console.log("✅ Sistema API oEmbed ativado para captura de Títulos Inquebrável!");
 });

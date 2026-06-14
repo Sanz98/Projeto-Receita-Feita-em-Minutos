@@ -26,6 +26,63 @@ function obterToken() {
 }
 
 // ==========================================
+// SISTEMA DE NOTIFICAÇÕES (TOAST) MINIMALISTA
+// ==========================================
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;';
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+  const icon = type === 'success' 
+    ? `<svg style="width: 22px; height: 22px; color: ${bgColor}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`
+    : `<svg style="width: 22px; height: 22px; color: ${bgColor}; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+  toast.style.cssText = `
+    background: #202024; 
+    border: 1px solid #323238;
+    border-left: 4px solid ${bgColor}; 
+    color: #f5f5f5; 
+    padding: 16px 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    font-family: 'Poppins', sans-serif; 
+    font-size: 0.95rem; 
+    font-weight: 500; 
+    display: flex; 
+    align-items: center; 
+    gap: 14px; 
+    width: max-content;
+    max-width: calc(100vw - 40px);
+    transform: translateX(120%); 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease; 
+    opacity: 0;
+    pointer-events: auto;
+  `;
+  
+  toast.innerHTML = `${icon} <span style="line-height: 1.4;">${message}</span>`;
+  container.appendChild(toast);
+  
+  // Animação de entrada suave
+  requestAnimationFrame(() => {
+    toast.style.transform = 'translateX(0)';
+    toast.style.opacity = '1';
+  });
+  
+  // Remove após 3.5 segundos
+  setTimeout(() => {
+    toast.style.transform = 'translateX(120%)';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 400);
+  }, 3500);
+}
+
+// ==========================================
 // FUNÇÃO QUE GERA A IMAGEM DE FALLBACK
 // ==========================================
 function gerarImagemReceita(nome, link) {
@@ -122,7 +179,6 @@ async function carregar() {
     lista.innerHTML = "";
 
     receitasGlobais.forEach((r, index) => {
-      // Prioridade: A imagem oficial capturada. Se não existir, gera fallback.
       const img = r.imagem || gerarImagemReceita(r.nome, r.link);
 
       lista.innerHTML += `
@@ -168,7 +224,7 @@ async function criarReceita() {
   const btnExtrair = document.querySelector("#home .form .btn-primary");
 
   if (!linkOriginal) {
-    return alert("Por favor, cole um link válido para extrair a receita!");
+    return showToast("Por favor, cole um link válido para extrair a receita!", "error");
   }
 
   const textoOriginal = btnExtrair.innerText;
@@ -194,8 +250,6 @@ async function criarReceita() {
     const nome = dadosExtraidos.nome || "Receita Extraída por IA";
     const ingredientes = dadosExtraidos.ingredientes || "Ingredientes não catalogados";
     
-    // NOVIDADE: Apanha a imagem real enviada pelo back-end (do TudoGostoso, YouTube, etc).
-    // Se por acaso o site não tiver imagem, usa a nossa função normal de fallback (loremflickr)
     const urlImagemGerada = dadosExtraidos.imagem || gerarImagemReceita(nome, linkOriginal);
 
     const res = await fetch(API, {
@@ -216,18 +270,19 @@ async function criarReceita() {
       }
 
       await carregar(); 
+      showToast("Receita extraída com sucesso!", "success");
       navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
       if (res.status === 401 || res.status === 403) {
-        alert("Sessão expirada. Faça login novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
         sair();
       } else {
-        alert("Erro ao salvar a receita no servidor.");
+        showToast("Erro ao salvar a receita no servidor.", "error");
       }
     }
   } catch (error) {
     console.error("Erro no fluxo de execução de IA:", error);
-    alert(error.message || "Falha de comunicação com o motor de Inteligência Artificial.");
+    showToast(error.message || "Falha de comunicação com o motor de Inteligência Artificial.", "error");
   } finally {
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
@@ -250,14 +305,14 @@ async function deletar(id) {
     });
 
     if (res.ok) {
-      alert("Receita excluída com sucesso!");
+      showToast("Receita excluída com sucesso!", "success");
       carregar(); 
     } else {
-      alert("Erro ao excluir receita do servidor.");
+      showToast("Erro ao excluir receita do servidor.", "error");
     }
   } catch (error) {
     console.error("Erro ao deletar receita:", error);
-    alert("Erro de conexão. Verifique se o seu servidor Back-end está rodando.");
+    showToast("Erro de conexão. Verifique se o seu servidor Back-end está rodando.", "error");
   }
 }
 
@@ -266,7 +321,7 @@ async function deletar(id) {
 // ==========================================
 function abrirEditarReceita(id) {
   const receita = receitasGlobais.find(r => String(r._id) === String(id));
-  if (!receita) return alert("Receita não encontrada!");
+  if (!receita) return showToast("Receita não encontrada!", "error");
 
   document.getElementById("edit-nome").value = receita.nome;
   document.getElementById("edit-link").value = receita.link || "";
@@ -288,7 +343,7 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
   const ingredientes = document.getElementById("edit-ingredientes").value.trim();
 
   if (!nome || !ingredientes) {
-    return alert("Os campos de Nome e Ingredientes não podem ficar vazios!");
+    return showToast("Os campos de Nome e Ingredientes não podem ficar vazios!", "error");
   }
 
   try {
@@ -304,12 +359,13 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
     if (res.ok) {
       fecharModalEditar();
       carregar(); 
-      alert("Receita atualizada com sucesso!");
+      showToast("Receita atualizada com sucesso!", "success");
     } else {
-      alert("Erro ao atualizar a receita no servidor.");
+      showToast("Erro ao atualizar a receita no servidor.", "error");
     }
   } catch (error) {
     console.error("Erro crítica na requisição PUT:", error);
+    showToast("Erro crítica na requisição ao servidor.", "error");
   }
 }
 
@@ -333,7 +389,7 @@ async function salvarReceitaManual() {
   let imagem = document.getElementById("add-imagem").value.trim();
 
   if (!nome || !ingredientes) {
-    return alert("Por favor, preencha o Nome e os Ingredientes para criar a receita!");
+    return showToast("Por favor, preencha o Nome e os Ingredientes para criar a receita!", "error");
   }
 
   if (!imagem) {
@@ -355,18 +411,18 @@ async function salvarReceitaManual() {
     if (res.ok) {
       fecharModalAdicionar();
       await carregar(); 
-      alert("Receita criada com sucesso!");
+      showToast("Receita criada com sucesso!", "success");
     } else {
       if (res.status === 401 || res.status === 403) {
-        alert("Sessão expirada. Faça login novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
         sair();
       } else {
-        alert("Erro ao salvar a receita no servidor.");
+        showToast("Erro ao salvar a receita no servidor.", "error");
       }
     }
   } catch (error) {
     console.error("Erro ao salvar receita manual:", error);
-    alert("Falha de conexão com o servidor.");
+    showToast("Falha de conexão com o servidor.", "error");
   }
 }
 
@@ -478,7 +534,7 @@ function atualizarListaCompras() {
 // INTERAÇÃO COM HISTÓRICO DE PEDIDOS DO DELIVERY
 // ==========================================
 function fecharPedidoShopper(valorTotal) {
-  if (itensParaComprarGlobal.length === 0) return alert("Seu carrinho de compras está vazio!");
+  if (itensParaComprarGlobal.length === 0) return showToast("Seu carrinho de compras está vazio!", "error");
 
   const numeroPedido = Math.floor(Math.random() * (9999 - 1000) + 1000);
   const novoPedido = {
@@ -494,6 +550,7 @@ function fecharPedidoShopper(valorTotal) {
   localStorage.setItem('pedidos_shopper', JSON.stringify(pedidosAtuais));
 
   itensParaComprarGlobal = []; 
+  showToast("Pedido confirmado e em rota de entrega!", "success");
   navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
 }
 
@@ -572,7 +629,6 @@ async function carregarHistorico() {
     lista.innerHTML = "";
 
     receitasGlobais.forEach((r, index) => {
-      // Prioridade no Histórico também recebe a imagem real extraída
       const img = r.imagem || gerarImagemReceita(r.nome, r.link);
 
       lista.innerHTML += `
@@ -625,7 +681,7 @@ function selecionarNota(valor) {
 
 async function enviarAvaliacao() {
   if (notaSelecionada === 0) {
-    return alert("Por favor, selecione pelo menos uma estrela para nos avaliar!");
+    return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
   }
 
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
@@ -645,18 +701,19 @@ async function enviarAvaliacao() {
       resetEstrelas();
       document.getElementById("comentario-avaliacao").value = "";
       
+      showToast("Avaliação enviada com sucesso!", "success");
       navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
       if (res.status === 401 || res.status === 403) {
-         alert("Sessão expirada! Por favor, faça login novamente para avaliar.");
+         showToast("Sessão expirada! Por favor, faça login novamente para avaliar.", "error");
          sair();
       } else {
-         alert("Erro ao enviar avaliação no servidor.");
+         showToast("Erro ao enviar avaliação no servidor.", "error");
       }
     }
   } catch (error) {
     console.error("Erro na avaliação:", error);
-    alert("Falha na conexão com o Back-end.");
+    showToast("Falha na conexão com o Back-end.", "error");
   }
 }
 
@@ -679,8 +736,8 @@ async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
 
-  if (!senhaAtual || !novaSenha) return alert("Preencha a palavra-passe atual e a nova!");
-  if (novaSenha.length < 6) return alert("A nova palavra-passe deve ter pelo menos 6 caracteres.");
+  if (!senhaAtual || !novaSenha) return showToast("Preencha a palavra-passe atual e a nova!", "error");
+  if (novaSenha.length < 6) return showToast("A nova palavra-passe deve ter pelo menos 6 caracteres.", "error");
 
   try {
     const res = await fetch(`${baseUrl}/perfil/senha`, {
@@ -693,14 +750,16 @@ async function alterarSenha() {
     });
 
     const dados = await res.json();
-    alert(dados.mensagem);
 
     if (res.ok) {
+      showToast(dados.mensagem, "success");
       document.getElementById("senha-atual").value = "";
       document.getElementById("nova-senha").value = "";
+    } else {
+      showToast(dados.mensagem, "error");
     }
   } catch (error) {
-    alert("Erro de ligação com o servidor ao alterar a palavra-passe.");
+    showToast("Erro de ligação com o servidor ao alterar a palavra-passe.", "error");
   }
 }
 
@@ -717,13 +776,13 @@ async function excluirConta() {
     const dados = await res.json();
     
     if (res.ok) {
-      alert(dados.mensagem);
-      sair(); 
+      showToast(dados.mensagem, "success");
+      setTimeout(() => sair(), 1500); 
     } else {
-      alert(dados.mensagem || "Erro ao excluir conta.");
+      showToast(dados.mensagem || "Erro ao excluir conta.", "error");
     }
   } catch (error) {
-    alert("Erro de ligação com o servidor.");
+    showToast("Erro de ligação com o servidor.", "error");
   }
 }
 
