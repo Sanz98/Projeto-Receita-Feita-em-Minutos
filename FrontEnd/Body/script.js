@@ -81,6 +81,9 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
+// ==========================================
+// FUNÇÃO QUE GERA A IMAGEM DE FALLBACK
+// ==========================================
 function gerarImagemReceita(nome, link) {
   if (link) {
     const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
@@ -95,6 +98,9 @@ function gerarImagemReceita(nome, link) {
   return `https://loremflickr.com/400/300/${palavraChave},food/all?lock=${randomID}`;
 }
 
+// ==========================================
+// FUNÇÃO PARA MOSTRAR O PREVIEW NA HORA DO INPUT
+// ==========================================
 function mostrarPreview() {
   const link = document.getElementById("input-link").value;
   const imgElement = document.getElementById("previewReceita");
@@ -117,6 +123,9 @@ function mostrarPreview() {
   }
 }
 
+// ==========================================
+// NAVEGAÇÃO ENTRE AS PÁGINAS DO MENU
+// ==========================================
 function navegar(idPagina, btnElement) {
   const paginas = document.querySelectorAll('.pagina');
   paginas.forEach(pagina => pagina.style.display = 'none');
@@ -472,7 +481,7 @@ function capturarItensParaFaltantes() {
 }
 
 // ==========================================
-// ABA DE LISTA DE COMPRAS
+// ABA DE LISTA DE COMPRAS E MÁGICA GPS
 // ==========================================
 function atualizarListaCompras() {
   const container = document.getElementById("lista-compras-itens");
@@ -515,7 +524,7 @@ function atualizarListaCompras() {
 }
 
 // ==========================================
-// MODAL DE ENDEREÇOS UNIVERSAL (INSERIR E ALTERAR ROTAS)
+// MODAL DE ENDEREÇOS UNIVERSAL (NOVO PEDIDO & MUDAR ROTA)
 // ==========================================
 function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   let modal = document.getElementById('modal-endereco');
@@ -569,7 +578,7 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   `;
   document.body.appendChild(modal);
 
-  // Busca os múltiplos endereços no banco e desenha as opções exclusivas (Radios)
+  // Busca e renderiza a lista de múltiplos endereços salvos do banco de dados (Serve para Carrinho E Rastreio)
   fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
     .then(res => res.json())
     .then(data => {
@@ -729,7 +738,6 @@ async function despacharMudancaRota(pedidoId, enderecoFinal) {
     }
   } catch (error) { showToast("Falha de conexão com a central.", "error"); }
 }
-
 
 // ==========================================
 // RASTREAMENTO E GESTÃO DE PEDIDOS ATIVOS
