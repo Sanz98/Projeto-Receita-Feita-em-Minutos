@@ -157,7 +157,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 });
 
 // ==========================================
-// SISTEMA REAL DE DELIVERY E TAXAS
+// SISTEMA REAL DE DELIVERY COM CANCELAMENTO E TAXAS
 // ==========================================
 app.post('/pedidos', async (req, res) => {
   try {
@@ -233,7 +233,7 @@ app.put('/pedidos/:id/endereco-taxa', async (req, res) => {
 });
 
 // ==========================================
-// AVALIAÇÕES E PERFIL (MÚLTIPLOS ENDEREÇOS)
+// GESTÃO DE PERFIL E MÚLTIPLOS ENDEREÇOS
 // ==========================================
 app.get('/perfil/dados', async (req, res) => {
   try {
@@ -251,7 +251,6 @@ app.put('/perfil/endereco', async (req, res) => {
     const usuario = await User.findById(userToken.id);
     if (!usuario.enderecosSalvos) usuario.enderecosSalvos = [];
     
-    // Evita salvar exatamente o mesmo endereço duas vezes
     if (!usuario.enderecosSalvos.includes(endereco)) {
       usuario.enderecosSalvos.push(endereco);
       await usuario.save();
@@ -259,6 +258,23 @@ app.put('/perfil/endereco', async (req, res) => {
     
     res.status(200).json({ mensagem: "Endereço salvo com sucesso!", enderecosSalvos: usuario.enderecosSalvos });
   } catch (error) { res.status(500).json({ mensagem: "Erro ao salvar endereço." }); }
+});
+
+// NOVO: Rota de Exclusão Física de um Endereço Específico
+app.delete('/perfil/endereco', async (req, res) => {
+  try {
+    const userToken = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
+    const { endereco } = req.body;
+    
+    const usuario = await User.findById(userToken.id);
+    if (usuario && usuario.enderecosSalvos) {
+      usuario.enderecosSalvos = usuario.enderecosSalvos.filter(end => end !== endereco);
+      await usuario.save();
+      res.status(200).json({ mensagem: "Endereço removido com sucesso!", enderecosSalvos: usuario.enderecosSalvos });
+    } else {
+      res.status(404).json({ mensagem: "Usuário não encontrado." });
+    }
+  } catch (error) { res.status(500).json({ mensagem: "Erro ao excluir endereço." }); }
 });
 
 app.post('/avaliacoes', async (req, res) => {
@@ -320,5 +336,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log("✅ API Ativada (Cancelamentos, Taxas e Múltiplos Endereços)!");
+  console.log("✅ API de Delivery Dinâmica Ativada (Cancelamentos, Taxas e Gestão Completa de Endereços)!");
 });

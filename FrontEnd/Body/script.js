@@ -141,7 +141,7 @@ async function criarReceita() {
     if (!respostaIA.ok) throw new Error("Falha na Inteligência Artificial.");
 
     const dados = await respostaIA.json(); 
-    const urlImagemGerada = dados.imagem || gerarImagemReceita(dados.nome, linkOriginal);
+    const urlImagemGerada = dados.imagem || generarImagemReceita(dados.nome, linkOriginal);
 
     const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nome: dados.nome, ingredientes: dados.ingredientes, link: linkOriginal, imagem: urlImagemGerada }) });
 
@@ -197,7 +197,7 @@ async function salvarReceitaManual() {
 
   try {
     const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nome, ingredientes, link: "Manual", imagem }) });
-    if (res.ok) { fecharModalAdicionar(); await carregar(); showToast("Receita criada!", "success"); }
+    if (res.ok) { fecharModalAdicionar(); await carregar(); showToast("Receita created!", "success"); }
   } catch (error) { showToast("Falha de conexão.", "error"); }
 }
 
@@ -253,7 +253,7 @@ function atualizarListaCompras() {
 }
 
 // ==========================================
-// MODAL INTELIGENTE DE ENDEREÇOS (COM VISUALIZAÇÃO DESTACADA)
+// MODAL DE ENDEREÇOS COM GESTÃO COMPLETA (CRUD DE ENDEREÇO)
 // ==========================================
 function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   let modal = document.getElementById('modal-endereco');
@@ -305,7 +305,7 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
     </div>`;
   document.body.appendChild(modal);
 
-  // Busca e desenha os endereços salvos
+  // Carrega do banco e renderiza os endereços com botão de apagar
   fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
     .then(res => res.json())
     .then(data => {
@@ -315,21 +315,48 @@ function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
         const lista = document.getElementById("lista-enderecos");
         
         data.enderecosSalvos.forEach((end) => {
+          const safeEnd = end.replace(/'/g, "\\'"); // Escapa aspas para não quebrar a string no HTML
           lista.innerHTML += `
-            <label class="label-endereco-salvo" style="display: flex; align-items: center; gap: 12px; background: #1c1c1e; padding: 12px; border-radius: 8px; border: 1px solid #323238; cursor: pointer; color: #f5f5f5; font-size: 0.875rem; transition: 0.3s;">
-              <input type="radio" name="endereco-selecionado" value="${end}" style="accent-color: #10b981; width: 18px; height: 18px;" onchange="destacarEndereco(this)">
-              <span style="flex: 1;">${end}</span>
-            </label>
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+              <label class="label-endereco-salvo" style="display: flex; align-items: center; gap: 12px; background: #1c1c1e; padding: 12px; border-radius: 8px; border: 1px solid #323238; cursor: pointer; color: #f5f5f5; font-size: 0.875rem; transition: 0.3s; flex: 1; margin: 0;">
+                <input type="radio" name="endereco-selecionado" value="${end}" style="accent-color: #10b981; width: 18px; height: 18px;" onchange="destacarEndereco(this)">
+                <span style="flex: 1;">${end}</span>
+              </label>
+              <button onclick="deletarEnderecoSalvo('${safeEnd}', '${modo}', '${pedidoId}', ${valorTotal})" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; cursor: pointer; padding: 12px; border-radius: 8px; transition: 0.3s; display: flex; align-items: center; justify-content: center;" title="Excluir Endereço da Lista">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
           `;
         });
       }
     });
 }
 
+// NOVO: Faz a chamada DELETE para remover o endereço e atualiza o modal instantaneamente
+async function deletarEnderecoSalvo(endereco, modo, pedidoId, valorTotal) {
+  if (!confirm("Tem certeza que deseja remover este endereço da sua lista salva?")) return;
+
+  try {
+    const res = await fetch(`${baseUrl}/perfil/endereco`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+      body: JSON.stringify({ endereco })
+    });
+
+    if (res.ok) {
+      showToast("Endereço removido da sua lista!", "success");
+      abrirModalEndereco(modo, pedidoId, valorTotal); // Recarrega o modal na hora
+    } else {
+      showToast("Erro ao remover o endereço.", "error");
+    }
+  } catch(e) {
+    showToast("Falha de conexão com o servidor.", "error");
+  }
+}
+
 function fecharModalEndereco() { const m = document.getElementById('modal-endereco'); if(m) m.remove(); }
 function mascaraCEP(i) { let v = i.value.replace(/\D/g, ""); if (v.length > 5) v = v.substring(0, 5) + "-" + v.substring(5, 8); i.value = v; }
 
-// Função Visual: Pinta de verde a caixinha do endereço salvo quando ele é selecionado
 function destacarEndereco(radioElement) {
   document.querySelectorAll('.label-endereco-salvo').forEach(label => {
     label.style.borderColor = '#323238'; label.style.background = '#1c1c1e';
@@ -337,13 +364,11 @@ function destacarEndereco(radioElement) {
   const parent = radioElement.closest('label');
   parent.style.borderColor = '#10b981'; parent.style.background = 'rgba(16, 185, 129, 0.1)';
   
-  // Limpa o formulário manual para não haver dúvidas
   document.getElementById("input-cep").value = ""; document.getElementById("input-rua").value = ""; document.getElementById("input-numero").value = "";
   document.getElementById("input-complemento").value = ""; document.getElementById("input-bairro").value = ""; document.getElementById("input-cidade").value = "";
   document.getElementById("check-salvar-endereco").checked = false;
 }
 
-// Remove as cores de destaque se o usuário começar a digitar um endereço novo
 function desmarcarRadios() {
   document.querySelectorAll('input[name="endereco-selecionado"]').forEach(r => r.checked = false);
   document.querySelectorAll('.label-endereco-salvo').forEach(label => {
@@ -363,23 +388,22 @@ async function buscarCEP() {
       document.getElementById("input-cidade").value = `${data.localidade} - ${data.uf}`;
       desmarcarRadios(); document.getElementById("input-numero").focus();
     }
-  } catch(e) {} finally { btn.innerText = "Buscar"; }
+  } catch(e) {} finally { if (btn) btn.innerText = "Buscar"; }
 }
 
 async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
   let enderecoFinal = "";
   const radioSelecionado = document.querySelector('input[name="endereco-selecionado"]:checked');
 
-  // Lógica de exclusividade perfeita! Se marcou a bolinha, usa o salvo. Se não, usa o digitado.
   if (radioSelecionado) {
     enderecoFinal = radioSelecionado.value;
   } else {
     const rua = document.getElementById("input-rua").value.trim(); const num = document.getElementById("input-numero").value.trim();
     const comp = document.getElementById("input-complemento").value.trim(); const bairro = document.getElementById("input-bairro").value.trim();
-    const cidade = document.getElementById("input-cidade").value.trim();
+    const city = document.getElementById("input-cidade").value.trim();
 
-    if (!rua || !num || !bairro || !cidade) return showToast("Preencha todos os campos do novo endereço ou selecione um endereço salvo!", "error");
-    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${cidade}`;
+    if (!rua || !num || !bairro || !city) return showToast("Preencha todos os campos do novo endereço ou selecione um endereço salvo!", "error");
+    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${city}`;
 
     if (document.getElementById("check-salvar-endereco").checked) {
       try { await fetch(`${baseUrl}/perfil/endereco`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ endereco: enderecoFinal }) }); } catch(e) {}
