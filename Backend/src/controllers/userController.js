@@ -120,4 +120,12 @@ async function removerEndereco(req, res) {
     }
 }
 
-module.exports = { listar, register, login, atualizar, deletar, removerEndereco };
+// No final do userController.js
+module.exports = { 
+    listar, 
+    register, 
+    login, 
+    atualizar, 
+    deletar, 
+    removerEndereco 
+};

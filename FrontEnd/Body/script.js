@@ -530,20 +530,23 @@ async function removerEndereco(index) {
   if (!confirm("Deseja excluir este endereço salvo?")) return;
   
   try {
-    const res = await fetch(`${baseUrl}/perfil/endereco/${index}`, {
+    // Adicione "/users" antes de "/perfil" se o seu app.js tiver app.use('/users', ...)
+    const res = await fetch(`${baseUrl}/users/perfil/endereco/${index}`, { 
       method: "DELETE",
       headers: { "Authorization": `Bearer ${obterToken()}` }
     });
     
     if (res.ok) {
-      showToast("Endereço removido!", "success");
-      fecharModalEndereco(); // Fecha e reabre para atualizar
+      showToast("Endereço removido com sucesso!", "success");
+      fecharModalEndereco();
+      // Recarrega o modal para atualizar a lista na tela
       abrirModalEndereco('pedido'); 
     } else {
       showToast("Erro ao excluir endereço.", "error");
     }
   } catch (e) {
-    showToast("Erro de conexão.", "error");
+    console.error(e);
+    showToast("Erro de conexão com o servidor.", "error");
   }
 }
 
