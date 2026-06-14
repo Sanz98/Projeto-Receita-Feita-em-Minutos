@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,24 +10,19 @@
     :root { --bg-dark: #121214; --card-dark: #202024; --primary-food: #FF6B00; --primary-hover: #E55C00; --text-light: #F8F8F2; --text-muted: #A1A1AA; --border-color: #323238; }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
     body { background-color: var(--bg-dark); color: var(--text-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #3a1a05, var(--bg-dark) 50%); }
-    .auth-container { background: var(--card-dark); padding: 40px; border-radius: 24px; border: 1px solid var(--border-color); width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center; }
-    .logo-icon { background: linear-gradient(135deg, var(--primary-food), #FF9500); padding: 14px; border-radius: 16px; color: white; display: inline-flex; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(255, 107, 0, 0.3); }
-    .logo-icon svg { width: 32px; height: 32px; }
-    h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
-    p.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; }
+    .auth-container { background: var(--card-dark); padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+    .logo-icon { width: 48px; height: 48px; background: rgba(255, 107, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary-food); margin-bottom: 24px; }
+    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
     .input-group { margin-bottom: 20px; text-align: left; }
-    .input-group label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px; font-weight: 500; }
-    .input-group input { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 15px 20px; border-radius: 12px; font-size: 0.95rem; outline: none; transition: 0.3s; }
-    .input-group input:focus { border-color: var(--primary-food); box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2); }
-    .btn-primary { background: var(--primary-food); color: white; border: none; padding: 16px; border-radius: 50px; font-weight: 600; font-size: 1rem; width: 100%; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 107, 0, 0.4); }
-    .register-link { display: block; margin-top: 25px; color: var(--text-muted); font-size: 0.9rem; text-decoration: none; transition: 0.3s; }
-    .register-link span { color: var(--primary-food); font-weight: 600; }
-    .register-link:hover span { color: var(--primary-hover); text-decoration: underline; }
-    #msg-erro { display: none; margin-bottom: 20px; font-size: 0.85rem; font-weight: 500; padding: 12px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+    .input-group input, .input-group select { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-light); padding: 14px 16px; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary-food); }
+    .btn-primary { background: var(--primary-food); color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.3s; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    #msg-erro { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 20px; display: none; border: 1px solid rgba(239, 68, 68, 0.2); }
   </style>
 </head>
-
 <body>
 
   <div class="auth-container">
@@ -37,7 +31,7 @@
     </div>
     
     <h2>Bem-vindo de volta!</h2>
-    <p class="subtitle">Faça login para acessar suas receitas.</p>
+    <p class="subtitle">Faça login para acessar suas receitas e pedidos.</p>
 
     <div id="msg-erro">Usuário ou senha incorretos!</div>
 
@@ -47,22 +41,88 @@
         <input type="text" id="username" placeholder="Seu usuário" required>
       </div>
       
-     <div class="input-group">
+      <div class="input-group">
         <label for="password">Senha</label>
         <input type="password" id="password" placeholder="Digite sua senha" required />
       </div>
 
-      <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
-        <a href="esqueciSenha.html" style="color: var(--primary-food); font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: color 0.3s;" onmouseover="this.style.color='var(--primary-hover)'" onmouseout="this.style.color='var(--primary-food)'">
-          Esqueci minha senha
-        </a>
+      <div class="input-group">
+        <label for="perfil">Perfil de Acesso</label>
+        <select id="perfil" required>
+          <option value="cliente">🧑‍🍳 Cliente (Receitas & Pedidos)</option>
+          <option value="entregador">🛵 Entregador (Shopper Delivery)</option>
+        </select>
       </div>
-      <button type="submit" class="btn-primary">Entrar</button>
-    </form>
 
-    <a href="register.html" class="register-link">Ainda não tem conta? <span>Cadastre-se aqui</span></a>
+      <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
+        <a href="esqueciSenha.html" style="color: var(--primary-food); font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: color 0.3s;">Esqueceu a senha?</a>
+      </div>
+
+      <button type="submit" class="btn-primary">Entrar no Sistema</button>
+      
+      <p style="color: var(--text-muted); text-align: center; margin-top: 24px; font-size: 0.9rem;">
+        Não tem uma conta? <a href="cadastro.html" style="color: var(--primary-food); text-decoration: none; font-weight: 600;">Registe-se</a>
+      </p>
+    </form>
   </div>
 
-  <script src="login.js"></script>
+  <script>
+    let baseUrl = '';
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+        if(window.location.port !== '3000') {
+            baseUrl = 'http://localhost:3000';
+        }
+    }
+
+    async function fazerLogin(event) {
+      event.preventDefault();
+      
+      const btn = document.querySelector('.btn-primary');
+      const textoOriginal = btn.innerText;
+      btn.innerText = "A autenticar...";
+      btn.style.opacity = "0.7";
+      btn.disabled = true;
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const perfil = document.getElementById("perfil").value;
+      const msgErro = document.getElementById("msg-erro");
+
+      msgErro.style.display = "none";
+
+      try {
+        const res = await fetch(`${baseUrl}/users/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const dados = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('logado', 'true');
+          localStorage.setItem('token', dados.token);
+          localStorage.setItem('perfil', perfil);
+
+          // Roteamento Mágico para Cliente ou Entregador
+          if (perfil === 'entregador') {
+            window.location.href = 'entregador.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        } else {
+          msgErro.innerText = dados.mensagem || "Usuário ou senha incorretos!";
+          msgErro.style.display = "block";
+        }
+      } catch (err) {
+        msgErro.innerText = "Falha ao conectar com o servidor Back-end.";
+        msgErro.style.display = "block";
+      } finally {
+        btn.innerText = textoOriginal;
+        btn.style.opacity = "1";
+        btn.disabled = false;
+      }
+    }
+  </script>
 </body>
 </html>

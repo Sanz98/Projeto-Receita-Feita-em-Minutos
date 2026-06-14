@@ -6,6 +6,7 @@ if (localStorage.getItem('logado') !== 'true') {
 function sair() {
   localStorage.removeItem('logado');
   localStorage.removeItem('token');
+  localStorage.removeItem('perfil');
   window.location.href = 'login.html';
 }
 
@@ -116,11 +117,9 @@ function mostrarPreview() {
   const match = link.match(regex);
   
   if (match && match[1].length === 11) {
-    // É vídeo do YouTube -> Mostra instantaneamente a thumbnail real do vídeo
     imgElement.src = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
     imgElement.style.display = 'block';
   } else {
-    // É site comum -> Mostra a imagem placeholder momentaneamente enquanto não é extraída
     imgElement.src = "https://loremflickr.com/400/300/recipe,cooking/all";
     imgElement.style.display = 'block';
   }
@@ -216,7 +215,7 @@ async function carregar() {
 }
 
 // ==========================================
-// CRIAR RECEITA (INTEGRAÇÃO DA IMAGEM OFICIAL DO SITE)
+// CRIAR RECEITA (INTEGRAÇÃO DA IA)
 // ==========================================
 async function criarReceita() {
   const linkInput = document.getElementById("input-link");
@@ -249,7 +248,6 @@ async function criarReceita() {
     
     const nome = dadosExtraidos.nome || "Receita Extraída por IA";
     const ingredientes = dadosExtraidos.ingredientes || "Ingredientes não catalogados";
-    
     const urlImagemGerada = dadosExtraidos.imagem || gerarImagemReceita(nome, linkOriginal);
 
     const res = await fetch(API, {
@@ -531,7 +529,7 @@ function atualizarListaCompras() {
 }
 
 // ==========================================
-// INTERAÇÃO COM HISTÓRICO DE PEDIDOS DO DELIVERY
+// RASTREAMENTO DINÂMICO ESTILO UBER/iFOOD
 // ==========================================
 function fecharPedidoShopper(valorTotal) {
   if (itensParaComprarGlobal.length === 0) return showToast("Seu carrinho de compras está vazio!", "error");
@@ -548,9 +546,12 @@ function fecharPedidoShopper(valorTotal) {
   let pedidosAtuais = JSON.parse(localStorage.getItem('pedidos_shopper') || "[]");
   pedidosAtuais.unshift(novoPedido);
   localStorage.setItem('pedidos_shopper', JSON.stringify(pedidosAtuais));
+  
+  // Reinicia o status do motorista para uma nova entrega começar a procurar
+  localStorage.setItem('motorista_status', 'aguardando');
 
   itensParaComprarGlobal = []; 
-  showToast("Pedido confirmado e em rota de entrega!", "success");
+  showToast("Pedido confirmado! A procurar entregadores...", "success");
   navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
 }
 
@@ -572,41 +573,52 @@ function carregarPedidosShopper() {
     return;
   }
 
+  // Verifica o status selecionado na interface do motorista em tempo real
+  const statusDoMotorista = localStorage.getItem('motorista_status') || 'aguardando';
+
   container.innerHTML = pedidos.map(p => {
     const minutosDecorridos = Math.floor((Date.now() - (p.horaCriacao || Date.now())) / 60000);
-    let tempoRestante = 30 - minutosDecorridos;
-    let statusText = p.status || "Em rota de entrega";
-    let tempoText = `Entrega em ${tempoRestante} min`;
+    let tempoRestante = 15 - minutosDecorridos;
+    
+    let statusText = "A procurar entregador disponível...";
+    let corStatus = "#FFB800";
+    let tempoText = "Calculando...";
 
-    if (tempoRestante <= 0) {
-      tempoRestante = 0;
-      statusText = "Entregue";
+    if (statusDoMotorista === 'em_rota') {
+      statusText = "Entregador a caminho!";
+      corStatus = "#10b981";
+      tempoText = `Chega em ${tempoRestante > 0 ? tempoRestante : 2} min`;
+    } else if (statusDoMotorista === 'entregue' || tempoRestante <= 0) {
+      statusText = "Entregue e Finalizado";
+      corStatus = "#3b82f6";
       tempoText = "Concluído";
     }
 
     return `
-      <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid #10b981; display: block;">
+      <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid ${corStatus}; display: block;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Express #${p.id}</h4>
-            <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos • R$ ${p.total.replace('.', ',')}</span>
+            <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Shopper #${p.id}</h4>
+            <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos cadastrados</span>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-            <span style="color: #10b981; font-weight: 600; font-size: 0.9rem;">${statusText}</span>
+            <span style="color: ${corStatus}; font-weight: 600; font-size: 0.9rem; text-align: right;">${statusText}</span>
             <span style="font-size: 0.85rem; color: #FFB800; font-weight: 700;">⏱ ${tempoText}</span>
           </div>
         </div>
         
-        ${tempoRestante > 0 ? `
-        <div style="margin-top: 15px; width: 100%; height: 180px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color);">
-          <iframe src="https://maps.google.com/maps?q=Sumaré,São Paulo&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        <div style="margin-top: 15px; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; border: 1px solid #323238; position: relative;">
+          <iframe src="http://maps.google.com/maps?q=-22.8205,-47.2662&t=&z=14&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
+          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(28, 28, 30, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #323238; color: #f5f5f5;">
+            📍 Rastreamento GPS Satélite Ativo
+          </div>
         </div>
-        ` : ''}
       </div>
     `;
   }).join('');
 
-  setTimeout(carregarPedidosShopper, 60000);
+  // Atualiza a tela a cada 5 segundos para refletir as mudanças do entregador rapidamente!
+  setTimeout(carregarPedidosShopper, 5000);
 }
 
 // ==========================================
