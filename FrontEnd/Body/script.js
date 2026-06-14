@@ -164,7 +164,7 @@ async function carregar() {
     }
 
     if (!res.ok) {
-      console.warn("Aviso: O servidor retornou um erro ao tentar carregar as receitas.");
+      console.warn("Aviso: O servidor devolveu um erro ao tentar carregar as receitas.");
       return;
     }
 
@@ -527,7 +527,7 @@ function atualizarListaCompras() {
 }
 
 // ==========================================
-// MODAL INTELIGENTE DE ENDEREÇOS (VIACEP E MEMÓRIA)
+// MODAL INTELIGENTE DE ENDEREÇOS E ENVIO DO PEDIDO
 // ==========================================
 function abrirModalEndereco(valorTotal) {
   let modal = document.getElementById('modal-endereco');
@@ -578,7 +578,6 @@ function abrirModalEndereco(valorTotal) {
   `;
   document.body.appendChild(modal);
 
-  // Busca na base de dados se o cliente já tinha salvo um endereço antes
   fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
     .then(res => res.json())
     .then(data => {
@@ -602,7 +601,6 @@ function mascaraCEP(input) {
   input.value = v;
 }
 
-// Consome a API Pública ViaCEP para achar a rua do cliente
 async function buscarCEP() {
   const cep = document.getElementById("input-cep").value.replace(/\D/g, "");
   if (cep.length !== 8) return showToast("Digite um CEP válido com 8 números!", "error");
@@ -628,7 +626,6 @@ async function buscarCEP() {
   }
 }
 
-// O Cliente finaliza enviando os dados precisos para o Motorista
 async function finalizarPedido(tipo, valorTotal) {
   if (itensParaComprarGlobal.length === 0) {
     fecharModalEndereco();
@@ -649,10 +646,8 @@ async function finalizarPedido(tipo, valorTotal) {
     if (!rua || !num || !bairro || !cidade) {
       return showToast("Preencha Rua, Número, Bairro e Cidade!", "error");
     }
-
     enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${cidade}`;
 
-    // Se o cliente quer salvar para a próxima vez, enviamos um PUT para o backend
     const salvarNoBanco = document.getElementById("check-salvar-endereco").checked;
     if (salvarNoBanco) {
       try {
@@ -661,11 +656,10 @@ async function finalizarPedido(tipo, valorTotal) {
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
           body: JSON.stringify({ endereco: enderecoFinal })
         });
-      } catch(e) { console.warn("Erro ao salvar endereço no perfil."); }
+      } catch(e) {}
     }
   }
 
-  // Despacha a entrega oficial para a central MongoDB
   try {
     const res = await fetch(`${baseUrl}/pedidos`, {
       method: "POST",
@@ -674,7 +668,7 @@ async function finalizarPedido(tipo, valorTotal) {
         itens: itensParaComprarGlobal.join(', '),
         itensContagem: itensParaComprarGlobal.length,
         valorTotal: valorTotal.toFixed(2),
-        endereco: enderecoFinal // Endereço Limpo e Real
+        endereco: enderecoFinal 
       })
     });
 
@@ -691,6 +685,9 @@ async function finalizarPedido(tipo, valorTotal) {
   }
 }
 
+// ==========================================
+// RASTREAMENTO E GESTÃO DE PEDIDOS ATIVOS
+// ==========================================
 let timeoutPollingCliente = null;
 
 async function carregarPedidosShopper() {
@@ -734,7 +731,6 @@ async function carregarPedidosShopper() {
         tempoText = "Concluído";
       }
 
-      // O mapa agora é centralizado 100% no endereço que o cliente escolheu!
       const mapaReal = `https://maps.google.com/maps?q=${encodeURIComponent(p.endereco || 'Sumaré, SP')}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 
       return `
@@ -742,7 +738,7 @@ async function carregarPedidosShopper() {
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <h4 style="font-weight: 700; color: #f5f5f5;">Pedido Shopper</h4>
-              <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos • R$ ${p.valorTotal.toFixed(2).replace('.', ',')}</span>
+              <span style="font-size: 0.85rem; color: #a3a3a3;">${p.itensContagem} produtos • R$ ${Number(p.valorTotal).toFixed(2).replace('.', ',')}</span>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
               <span style="color: ${corStatus}; font-weight: 600; font-size: 0.9rem; text-align: right;">${statusText}</span>
@@ -756,41 +752,78 @@ async function carregarPedidosShopper() {
             <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(28, 28, 30, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #323238; color: #f5f5f5;">
               📍 Rastreamento GPS Satélite Ativo
             </div>
-          </div>` : ''}
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button onclick="alterarEnderecoPedido('${p._id}')" style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.3s;">Mudar Rota (+R$ 3,00)</button>
+            <button onclick="cancelarPedido('${p._id}')" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.3s;">Cancelar Pedido</button>
+          </div>
+          ` : ''}
         </div>
       `;
     }).join('');
 
-  } catch(e) {
-    console.error("Erro ao sincronizar pedidos:", e);
-  }
+  } catch(e) { console.error("Erro ao sincronizar pedidos:", e); }
 
   clearTimeout(timeoutPollingCliente);
   timeoutPollingCliente = setTimeout(carregarPedidosShopper, 3000);
 }
 
+// Ações do Cliente sobre o Pedido Ativo
+async function cancelarPedido(id) {
+  const confirmacao = confirm("Tem certeza que deseja cancelar este pedido? O motorista será notificado e a corrida será encerrada.");
+  if (!confirmacao) return;
+
+  try {
+    const res = await fetch(`${baseUrl}/pedidos/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+    if (res.ok) {
+      showToast("Pedido cancelado com sucesso.", "success");
+      carregarPedidosShopper(); // Recarrega a tela na hora
+    } else {
+      showToast("Erro ao cancelar o pedido.", "error");
+    }
+  } catch (error) { showToast("Falha de conexão com a central.", "error"); }
+}
+
+async function alterarEnderecoPedido(id) {
+  const novoEnd = prompt("Digite o novo endereço completo para onde o motorista deve ir agora:\n\n(Atenção: Uma taxa de redirecionamento de R$ 3,00 será adicionada ao valor final da compra).");
+  
+  if (!novoEnd || novoEnd.trim() === "") return;
+
+  try {
+    const res = await fetch(`${baseUrl}/pedidos/${id}/endereco-taxa`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+      body: JSON.stringify({ novoEndereco: novoEnd })
+    });
+    
+    const dados = await res.json();
+    if (res.ok) {
+      showToast(dados.mensagem, "success");
+      carregarPedidosShopper();
+    } else {
+      showToast("Erro ao atualizar o endereço.", "error");
+    }
+  } catch (error) { showToast("Falha de conexão com a central.", "error"); }
+}
+
 // ==========================================
-// HISTÓRICO DE RECEITAS
+// HISTÓRICO E AVALIAÇÕES
 // ==========================================
 async function carregarHistorico() {
   try {
-    const res = await fetch(API, {
-      method: "GET",
-      headers: { "Authorization": `Bearer ${obterToken()}` }
-    });
-    
+    const res = await fetch(API, { headers: { "Authorization": `Bearer ${obterToken()}` }});
     if (!res.ok) return;
-
     const data = await res.json();
     receitasGlobais = Array.isArray(data) ? data : [];
-
     const lista = document.getElementById("lista-historico");
     if (!lista) return;
     lista.innerHTML = "";
-
     receitasGlobais.forEach((r, index) => {
       const img = r.imagem || gerarImagemReceita(r.nome, r.link);
-
       lista.innerHTML += `
         <div class="historico-card" style="margin-bottom: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -798,8 +831,7 @@ async function carregarHistorico() {
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
               <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
-                <span style="color: #a3a3a3;">Sincronizado via Extração</span>
-                <span style="color: #10b981;">Ativo</span>
+                <span style="color: #a3a3a3;">Sincronizado via Extração</span><span style="color: #10b981;">Ativo</span>
               </div>
             </div>
           </div>
@@ -809,72 +841,29 @@ async function carregarHistorico() {
         </div>
       `;
     });
-  } catch (error) {
-    console.error("Erro ao carregar histórico:", error);
-  }
+  } catch (error) {}
 }
 
-// ==========================================
-// SISTEMA DE AVALIAÇÃO (ESTRELAS)
-// ==========================================
 let notaSelecionada = 0;
-
 function hoverEstrela(valor) {
-  const stars = document.querySelectorAll(".star");
-  stars.forEach(star => {
-    if (star.getAttribute("data-value") <= valor) {
-      star.style.color = "#FFB800"; 
-    } else {
-      star.style.color = "#323238"; 
-    }
-  });
+  document.querySelectorAll(".star").forEach(star => { star.style.color = star.getAttribute("data-value") <= valor ? "#FFB800" : "#323238"; });
 }
-
-function resetEstrelas() {
-  hoverEstrela(notaSelecionada); 
-}
-
-function selecionarNota(valor) {
-  notaSelecionada = valor;
-  hoverEstrela(valor);
-}
+function resetEstrelas() { hoverEstrela(notaSelecionada); }
+function selecionarNota(valor) { notaSelecionada = valor; hoverEstrela(valor); }
 
 async function enviarAvaliacao() {
-  if (notaSelecionada === 0) {
-    return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
-  }
-
+  if (notaSelecionada === 0) return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
-
   try {
-    const res = await fetch(`${baseUrl}/avaliacoes`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${obterToken()}` 
-      },
-      body: JSON.stringify({ nota: notaSelecionada, comentario: comentario })
-    });
-
+    const res = await fetch(`${baseUrl}/avaliacoes`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nota: notaSelecionada, comentario: comentario }) });
     if (res.ok) {
-      notaSelecionada = 0;
-      resetEstrelas();
-      document.getElementById("comentario-avaliacao").value = "";
-      
-      showToast("Avaliação enviada com sucesso!", "success");
-      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+      notaSelecionada = 0; resetEstrelas(); document.getElementById("comentario-avaliacao").value = "";
+      showToast("Avaliação enviada com sucesso!", "success"); navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
-      if (res.status === 401 || res.status === 403) {
-         showToast("Sessão expirada! Por favor, faça login novamente para avaliar.", "error");
-         sair();
-      } else {
-         showToast("Erro ao enviar avaliação no servidor.", "error");
-      }
+      if (res.status === 401 || res.status === 403) { showToast("Sessão expirada! Por favor, faça login novamente para avaliar.", "error"); sair(); } 
+      else { showToast("Erro ao enviar avaliação no servidor.", "error"); }
     }
-  } catch (error) {
-    console.error("Erro na avaliação:", error);
-    showToast("Falha na conexão com o servidor.", "error");
-  }
+  } catch (error) { showToast("Falha na conexão com o servidor.", "error"); }
 }
 
 // ==========================================
@@ -883,68 +872,37 @@ async function enviarAvaliacao() {
 function carregarPerfil() {
   const token = obterToken();
   if (token !== "jwt-fake") {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      document.getElementById('perfil-username').innerText = payload.username || "Usuário";
-    } catch(e) {
-      console.error("Erro ao decodificar perfil:", e);
-    }
+    try { document.getElementById('perfil-username').innerText = JSON.parse(atob(token.split('.')[1])).username || "Usuário"; } 
+    catch(e) {}
   }
 }
 
 async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
-
   if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
   if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
 
   try {
-    const res = await fetch(`${baseUrl}/perfil/senha`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${obterToken()}`
-      },
-      body: JSON.stringify({ senhaAtual, novaSenha })
-    });
-
+    const res = await fetch(`${baseUrl}/perfil/senha`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ senhaAtual, novaSenha }) });
     const dados = await res.json();
-
     if (res.ok) {
       showToast(dados.mensagem, "success");
-      document.getElementById("senha-atual").value = "";
-      document.getElementById("nova-senha").value = "";
-    } else {
-      showToast(dados.mensagem, "error");
-    }
-  } catch (error) {
-    showToast("Erro de conexão com o servidor ao alterar a senha.", "error");
-  }
+      document.getElementById("senha-atual").value = ""; document.getElementById("nova-senha").value = "";
+    } else { showToast(dados.mensagem, "error"); }
+  } catch (error) { showToast("Erro de conexão com o servidor ao alterar a senha.", "error"); }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir a sua conta? TODOS os seus dados e PEDIDOS ATIVOS serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
-    const res = await fetch(`${baseUrl}/perfil`, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${obterToken()}` }
-    });
-
-    const dados = await res.json();
-    
+    const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
     if (res.ok) {
-      showToast(dados.mensagem, "success");
-      setTimeout(() => sair(), 1500); 
-    } else {
-      showToast(dados.mensagem || "Erro ao excluir conta.", "error");
-    }
-  } catch (error) {
-    showToast("Erro de conexão com o servidor.", "error");
-  }
+      showToast("Conta excluída com sucesso", "success"); setTimeout(() => sair(), 1500); 
+    } else { showToast("Erro ao excluir conta.", "error"); }
+  } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
 }
 
-// Inicialização automática
 carregar();

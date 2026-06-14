@@ -46,21 +46,16 @@
   <div id="modal-perfil-entregador" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
     <div style="background: #202024; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #323238;">
       <h3 style="margin-top: 0; color: #f5f5f5; font-size: 1.2rem; font-weight: 700; margin-bottom: 20px;">Gestão de Conta</h3>
-
       <div style="margin-bottom: 15px;">
         <label style="display: block; font-size: 0.85rem; color: #a3a3a3; margin-bottom: 8px;">Senha Atual</label>
         <input type="password" id="senha-atual-entregador" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box;" placeholder="Digite a senha atual">
       </div>
-
       <div style="margin-bottom: 25px;">
         <label style="display: block; font-size: 0.85rem; color: #a3a3a3; margin-bottom: 8px;">Nova Senha</label>
         <input type="password" id="nova-senha-entregador" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box;" placeholder="Digite a nova senha">
       </div>
-
       <button onclick="alterarSenhaEntregador()" style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">Atualizar Senha</button>
-
       <button onclick="excluirContaEntregador()" style="width: 100%; padding: 14px; background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 20px;">Excluir Minha Conta</button>
-
       <button onclick="fecharPerfilEntregador()" style="width: 100%; padding: 12px; background: transparent; color: #a3a3a3; border: none; cursor: pointer; font-weight: 500;">Cancelar Operação</button>
     </div>
   </div>
@@ -99,8 +94,36 @@
       setTimeout(() => toast.remove(), 3500);
     }
 
+    // NOVIDADE: Motorista agora vigia se o cliente apagou a conta ou alterou a encomenda!
     async function buscarChamadas() {
-      if (pedidoAtual) return;
+      if (pedidoAtual) {
+        try {
+          const res = await fetch(`${baseUrl}/pedidos/verificar/${pedidoAtual._id}`);
+          if (!res.ok) {
+            showToast("ATENÇÃO: O Cliente cancelou a corrida ou a conta foi apagada!", "error");
+            pedidoAtual = null;
+            document.getElementById("secao-rastreio").style.display = "none";
+            document.getElementById("secao-chamadas").style.display = "block";
+          } else {
+            const pedidoValidado = await res.json();
+            if(pedidoValidado.endereco !== pedidoAtual.endereco) {
+              showToast("ALERTA DE ROTA: O cliente alterou o destino! Mapa atualizado.", "success");
+              pedidoAtual.endereco = pedidoValidado.endereco;
+              
+              document.getElementById("detalhes-entrega").innerHTML = `
+                <strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br>
+                <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
+                <strong>NOVO Destino:</strong> <span style="color:#FFB800;">${pedidoAtual.endereco}</span>
+              `;
+              document.getElementById("mapa-entregador").src = `https://maps.google.com/maps?q=${encodeURIComponent(pedidoAtual.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+            }
+          }
+        } catch(e) {}
+        
+        clearTimeout(pollingChamadasTimeout);
+        pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
+        return;
+      }
 
       try {
         const res = await fetch(`${baseUrl}/pedidos/disponiveis`);
@@ -111,7 +134,6 @@
         if (chamados.length === 0) {
           container.innerHTML = `<p style="color: #737373; text-align: center; margin-top: 20px;">Nenhum chamado pendente no sistema. Aguardando...</p>`;
         } else {
-          // Motorista agora vê o endereço GPS real do Cliente!
           container.innerHTML = chamados.map(c => `
             <div class="historico-card" style="padding: 16px; margin-bottom: 16px; background: #202024; border: 1px solid #323238; border-radius: 12px;">
               <h4 style="margin: 0 0 8px 0; color: #f5f5f5;">Chamado Shopper #${c._id.substring(c._id.length - 4)}</h4>
@@ -122,9 +144,7 @@
             </div>
           `).join('');
         }
-      } catch(e) {
-          console.error("Erro ao buscar chamadas:", e);
-      }
+      } catch(e) {}
 
       clearTimeout(pollingChamadasTimeout);
       pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
@@ -145,12 +165,9 @@
           document.getElementById("detalhes-entrega").innerHTML = `
             <strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br>
             <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
-            <strong>Endereço:</strong> ${pedidoAtual.endereco}
+            <strong>Destino:</strong> ${pedidoAtual.endereco}
           `;
-
-          // NOVIDADE: Centraliza o Mapa Google com o endereço real GPS
           document.getElementById("mapa-entregador").src = `https://maps.google.com/maps?q=${encodeURIComponent(pedidoAtual.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
           showToast("Corrida Aceita! O cliente já está acompanhando o seu mapa.", "success");
         } else {
           showToast(dados.mensagem || "Erro ao aceitar corrida.", "error"); 
@@ -165,77 +182,40 @@
           method: "PUT",
           headers: { "Authorization": `Bearer ${obterToken()}` }
         });
-
         showToast("Entrega Finalizada! Excelente trabalho.", "success");
         pedidoAtual = null;
         document.getElementById("secao-rastreio").style.display = "none";
         document.getElementById("secao-chamadas").style.display = "block";
         buscarChamadas(); 
-      } catch(e) {
-          showToast("Erro ao finalizar entrega.", "error");
-      }
+      } catch(e) { showToast("Erro ao finalizar entrega.", "error"); }
     }
 
-    // ==========================================
-    // GESTÃO DE PERFIL DO ENTREGADOR (NOVO)
-    // ==========================================
-    function abrirPerfilEntregador() {
-      document.getElementById('modal-perfil-entregador').style.display = 'flex';
-    }
-
-    function fecharPerfilEntregador() {
-      document.getElementById('modal-perfil-entregador').style.display = 'none';
-      document.getElementById('senha-atual-entregador').value = '';
-      document.getElementById('nova-senha-entregador').value = '';
-    }
+    // Modal Perfil
+    function abrirPerfilEntregador() { document.getElementById('modal-perfil-entregador').style.display = 'flex'; }
+    function fecharPerfilEntregador() { document.getElementById('modal-perfil-entregador').style.display = 'none'; document.getElementById('senha-atual-entregador').value = ''; document.getElementById('nova-senha-entregador').value = ''; }
 
     async function alterarSenhaEntregador() {
       const senhaAtual = document.getElementById("senha-atual-entregador").value.trim();
       const novaSenha = document.getElementById("nova-senha-entregador").value.trim();
-
       if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
       if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
-
       try {
-        const res = await fetch(`${baseUrl}/perfil/senha`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${obterToken()}`
-          },
-          body: JSON.stringify({ senhaAtual, novaSenha })
-        });
+        const res = await fetch(`${baseUrl}/perfil/senha`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ senhaAtual, novaSenha }) });
         const dados = await res.json();
-        if (res.ok) {
-          showToast(dados.mensagem, "success");
-          fecharPerfilEntregador();
-        } else {
-          showToast(dados.mensagem, "error");
-        }
-      } catch (e) {
-        showToast("Erro de conexão com o servidor.", "error");
-      }
+        if (res.ok) { showToast(dados.mensagem, "success"); fecharPerfilEntregador(); } 
+        else { showToast(dados.mensagem, "error"); }
+      } catch (e) { showToast("Erro de conexão com o servidor.", "error"); }
     }
 
     async function excluirContaEntregador() {
       const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir a sua conta de motorista? Esta ação é irreversível!");
       if (!confirmacao) return;
-
       try {
-        const res = await fetch(`${baseUrl}/perfil`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${obterToken()}` }
-        });
+        const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
         const dados = await res.json();
-        if (res.ok) {
-          showToast("Conta excluída com sucesso.", "success");
-          setTimeout(() => sair(), 1500);
-        } else {
-          showToast(dados.mensagem || "Erro ao excluir conta.", "error");
-        }
-      } catch (error) {
-        showToast("Erro de conexão com o servidor.", "error");
-      }
+        if (res.ok) { showToast("Conta excluída com sucesso.", "success"); setTimeout(() => sair(), 1500); } 
+        else { showToast(dados.mensagem || "Erro ao excluir conta.", "error"); }
+      } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
     }
 
     buscarChamadas(); 

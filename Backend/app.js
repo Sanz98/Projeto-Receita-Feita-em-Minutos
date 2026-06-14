@@ -71,7 +71,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO IA (TÍTULOS EXATOS + MODO JSON)
+// ROTA DE EXTRAÇÃO IA
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -157,22 +157,13 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 });
 
 // ==========================================
-// SISTEMA REAL DE DELIVERY COM ENDEREÇOS
+// SISTEMA REAL DE DELIVERY COM CANCELAMENTO E TAXAS
 // ==========================================
 app.post('/pedidos', async (req, res) => {
   try {
     const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
     const { itens, itensContagem, valorTotal, endereco } = req.body;
-
-    await new Pedido({ 
-      clienteId: user.id, 
-      clienteNome: user.username, 
-      itens, 
-      itensContagem, 
-      valorTotal, 
-      endereco 
-    }).save();
-
+    await new Pedido({ clienteId: user.id, clienteNome: user.username, itens, itensContagem, valorTotal, endereco }).save();
     res.status(201).json({ mensagem: "Pedido enviado!" });
   } catch (err) { res.status(500).json({ mensagem: "Erro ao criar pedido." }); }
 });
@@ -187,6 +178,15 @@ app.get('/pedidos/cliente', async (req, res) => {
 app.get('/pedidos/disponiveis', async (req, res) => {
   try { res.status(200).json(await Pedido.find({ status: 'aguardando' }).sort({ horaCriacao: -1 })); } 
   catch (err) { res.status(500).json({ mensagem: "Erro." }); }
+});
+
+// NOVO: Verifica o Status do Pedido Atual para o Motorista (Cancelamentos e Rotas)
+app.get('/pedidos/verificar/:id', async (req, res) => {
+  try {
+    const pedido = await Pedido.findById(req.params.id);
+    if (!pedido) return res.status(404).json({ mensagem: "Cancelado" });
+    res.status(200).json(pedido);
+  } catch (err) { res.status(500).json({ mensagem: "Erro." }); }
 });
 
 app.put('/pedidos/:id/aceitar', async (req, res) => {
@@ -209,15 +209,41 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
   } catch (err) { res.status(500).json({ mensagem: "Erro." }); }
 });
 
+// NOVO: Cancelar Pedido pelo Cliente
+app.delete('/pedidos/:id', async (req, res) => {
+  try {
+    const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
+    await Pedido.findOneAndDelete({ _id: req.params.id, clienteId: user.id });
+    res.status(200).json({ mensagem: "Pedido cancelado com sucesso." });
+  } catch (err) { res.status(500).json({ mensagem: "Erro ao cancelar pedido." }); }
+});
+
+// NOVO: Alterar Endereço do Pedido com Taxa de R$ 3,00
+app.put('/pedidos/:id/endereco-taxa', async (req, res) => {
+  try {
+    const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
+    const { novoEndereco } = req.body;
+    
+    const pedido = await Pedido.findOne({ _id: req.params.id, clienteId: user.id });
+    if (!pedido) return res.status(404).json({ mensagem: "Pedido não encontrado." });
+    
+    pedido.endereco = novoEndereco;
+    pedido.valorTotal = Number(pedido.valorTotal) + 3.00;
+    await pedido.save();
+    
+    res.status(200).json({ mensagem: "Endereço atualizado! Taxa de R$ 3,00 aplicada.", pedido });
+  } catch (err) { res.status(500).json({ mensagem: "Erro ao alterar endereço." }); }
+});
+
 // ==========================================
-// AVALIAÇÕES E PERFIL (COM MEMÓRIA DE ENDEREÇO)
+// AVALIAÇÕES E PERFIL (COM EXCLUSÃO EM CASCATA DE PEDIDOS)
 // ==========================================
 app.get('/perfil/dados', async (req, res) => {
   try {
     const userToken = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
     const userData = await User.findById(userToken.id);
     res.status(200).json({ enderecoSalvo: userData.enderecoSalvo || "" });
-  } catch (error) { res.status(500).json({ mensagem: "Erro ao buscar dados do perfil." }); }
+  } catch (error) { res.status(500).json({ mensagem: "Erro ao buscar dados." }); }
 });
 
 app.put('/perfil/endereco', async (req, res) => {
@@ -259,6 +285,8 @@ app.delete('/perfil', async (req, res) => {
     await User.findByIdAndDelete(user.id);
     await Receita.deleteMany({ userId: user.id });
     await Avaliacao.deleteMany({ userId: user.id });
+    // NOVO: Exclusão em Cascata! Apaga todos os pedidos do cliente para que sumam da tela do motorista.
+    await Pedido.deleteMany({ clienteId: user.id }); 
     res.status(200).json({ mensagem: "Conta excluída." });
   } catch (error) { res.status(500).json({ mensagem: "Erro." }); }
 });
@@ -286,5 +314,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log("✅ API Inteligente de Delivery com CEP e Endereços Automáticos Ativada!");
+  console.log("✅ API de Delivery Dinâmica Ativada (Cancelamentos e Taxas Operacionais)!");
 });
