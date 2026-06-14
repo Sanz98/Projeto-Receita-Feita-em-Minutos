@@ -163,10 +163,7 @@ async function carregar() {
       return;
     }
 
-    if (!res.ok) {
-      console.warn("Aviso: O servidor devolveu um erro ao tentar carregar as receitas.");
-      return;
-    }
+    if (!res.ok) return;
 
     const data = await res.json();
     receitasGlobais = Array.isArray(data) ? data : [];
@@ -484,7 +481,7 @@ function capturarItensParaFaltantes() {
 }
 
 // ==========================================
-// ABA DE LISTA DE COMPRAS
+// ABA DE LISTA DE COMPRAS E MÁGICA GPS
 // ==========================================
 function atualizarListaCompras() {
   const container = document.getElementById("lista-compras-itens");
@@ -522,55 +519,58 @@ function atualizarListaCompras() {
 
   const btnConfirmar = document.querySelector("#compras .btn-primary");
   if (btnConfirmar) {
-    btnConfirmar.setAttribute("onclick", `abrirModalEndereco(${valorTotal})`);
+    btnConfirmar.setAttribute("onclick", `abrirModalEndereco('pedido', null, ${valorTotal})`);
   }
 }
 
 // ==========================================
-// MODAL INTELIGENTE DE ENDEREÇOS E ENVIO DO PEDIDO
+// MODAL DE ENDEREÇOS UNIVERSAL (NOVO PEDIDO & MUDAR ROTA)
 // ==========================================
-function abrirModalEndereco(valorTotal) {
+function abrirModalEndereco(modo, pedidoId = null, valorTotal = 0) {
   let modal = document.getElementById('modal-endereco');
   if(modal) modal.remove();
+
+  const titulo = modo === 'pedido' ? 'Onde devemos entregar?' : 'Alterar Destino da Entrega';
+  const subtitulo = modo === 'pedido' ? 'Selecione ou insira um endereço.' : 'A alteração de rota adicionará uma taxa de R$ 3,00.';
+  const btnTexto = modo === 'pedido' ? 'Confirmar e Pedir' : 'Confirmar Nova Rota (+R$ 3,00)';
 
   modal = document.createElement('div');
   modal.id = 'modal-endereco';
   modal.innerHTML = `
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
       <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto; font-family: 'Poppins', sans-serif;">
-        <h3 style="color: #f5f5f5; margin-top: 0; font-size: 1.3rem;">Onde devemos entregar?</h3>
-        <p style="color: #a3a3a3; font-size: 0.85rem; margin-bottom: 20px;">Confirme seu endereço exato para o motorista.</p>
+        <h3 style="color: #f5f5f5; margin-top: 0; font-size: 1.3rem;">${titulo}</h3>
+        <p style="color: #a3a3a3; font-size: 0.85rem; margin-bottom: 20px;">${subtitulo}</p>
 
-        <div id="area-endereco-salvo" style="display: none; margin-bottom: 20px; background: #1c1c1e; padding: 15px; border-radius: 8px; border: 1px solid #10b981;">
-          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin: 0 0 5px 0;">Meu Endereço Salvo</p>
-          <p id="texto-endereco-salvo" style="color: #f5f5f5; font-size: 0.9rem; margin: 0 0 12px 0;"></p>
-          <button onclick="finalizarPedido('salvo', ${valorTotal})" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Entregar neste endereço</button>
+        <div id="area-enderecos-salvos" style="display: none; margin-bottom: 20px;">
+          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin: 0 0 10px 0;">Seus Endereços Salvos</p>
+          <div id="lista-enderecos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
 
-        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.85rem; margin-bottom: 15px;">OU DIGITE UM NOVO ENDEREÇO</div>
+        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.85rem; margin-bottom: 15px; font-weight: 600;">OU PREENCHA UM NOVO ENDEREÇO</div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="text" id="input-cep" placeholder="Digite seu CEP" maxlength="9" onkeyup="mascaraCEP(this)" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; outline: none;">
-          <button id="btn-buscar-cep" onclick="buscarCEP()" style="padding: 0 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Buscar</button>
+          <input type="text" id="input-cep" placeholder="CEP" maxlength="9" onkeyup="mascaraCEP(this)" onchange="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; outline: none;">
+          <button id="btn-buscar-cep" onclick="buscarCEP()" style="padding: 0 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Buscar</button>
         </div>
 
-        <input type="text" id="input-rua" placeholder="Rua / Logradouro" style="width: 100%; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; margin-bottom: 10px; box-sizing: border-box; outline: none;">
+        <input type="text" id="input-rua" placeholder="Rua / Logradouro" oninput="desmarcarRadios()" style="width: 100%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; margin-bottom: 10px; box-sizing: border-box; outline: none;">
 
         <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-          <input type="text" id="input-numero" placeholder="Número" style="width: 35%; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
-          <input type="text" id="input-complemento" placeholder="Complemento (Ex: Apto 3)" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-numero" placeholder="Número" oninput="desmarcarRadios()" style="width: 30%; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-complemento" placeholder="Complemento" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
         </div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="text" id="input-bairro" placeholder="Bairro" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
-          <input type="text" id="input-cidade" placeholder="Cidade - UF" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-bairro" placeholder="Bairro" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-cidade" placeholder="Cidade - UF" oninput="desmarcarRadios()" style="flex: 1; padding: 12px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
         </div>
 
         <label style="display: flex; align-items: center; gap: 10px; color: #a3a3a3; font-size: 0.85rem; margin-bottom: 25px; cursor: pointer;">
           <input type="checkbox" id="check-salvar-endereco" style="width: 18px; height: 18px; accent-color: #10b981;"> Salvar este endereço para as próximas compras
         </label>
 
-        <button onclick="finalizarPedido('novo', ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">Confirmar e Pedir</button>
+        <button onclick="processarFormularioEndereco('${modo}', '${pedidoId}', ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">${btnTexto}</button>
 
         <button onclick="fecharModalEndereco()" style="width: 100%; padding: 12px; background: transparent; color: #a3a3a3; border: none; cursor: pointer; font-weight: 500;">Cancelar</button>
       </div>
@@ -578,14 +578,23 @@ function abrirModalEndereco(valorTotal) {
   `;
   document.body.appendChild(modal);
 
+  // Busca e renderiza a lista de múltiplos endereços salvos do banco de dados (Serve para Carrinho E Rastreio)
   fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
     .then(res => res.json())
     .then(data => {
-      if (data.enderecoSalvo) {
-        document.getElementById("area-endereco-salvo").style.display = "block";
+      if (data.enderecosSalvos && data.enderecosSalvos.length > 0) {
+        document.getElementById("area-enderecos-salvos").style.display = "block";
         document.getElementById("divisor-ou").style.display = "block";
-        document.getElementById("texto-endereco-salvo").innerText = data.enderecoSalvo;
-        document.getElementById("texto-endereco-salvo").dataset.endereco = data.enderecoSalvo;
+        const lista = document.getElementById("lista-enderecos");
+        
+        data.enderecosSalvos.forEach((end, idx) => {
+          lista.innerHTML += `
+            <label style="display: flex; align-items: center; gap: 12px; background: #1c1c1e; padding: 12px; border-radius: 8px; border: 1px solid #323238; cursor: pointer; color: #f5f5f5; font-size: 0.875rem;">
+              <input type="radio" name="endereco-selecionado" value="${end}" style="accent-color: #10b981; width: 18px; height: 18px;" onchange="limparCamposNovoEndereco()">
+              <span style="flex: 1;">${end}</span>
+            </label>
+          `;
+        });
       }
     });
 }
@@ -599,6 +608,23 @@ function mascaraCEP(input) {
   let v = input.value.replace(/\D/g, "");
   if (v.length > 5) v = v.substring(0, 5) + "-" + v.substring(5, 8);
   input.value = v;
+}
+
+// Desmarca as opções salvas se o cliente decidir digitar um endereço novo à mão
+function desmarcarRadios() {
+  const radios = document.querySelectorAll('input[name="endereco-selecionado"]');
+  radios.forEach(r => r.checked = false);
+}
+
+// Limpa os textos se o cliente desistir e decidir escolher uma opção salva
+function limparCamposNovoEndereco() {
+  document.getElementById("input-cep").value = "";
+  document.getElementById("input-rua").value = "";
+  document.getElementById("input-numero").value = "";
+  document.getElementById("input-complemento").value = "";
+  document.getElementById("input-bairro").value = "";
+  document.getElementById("input-cidade").value = "";
+  document.getElementById("check-salvar-endereco").checked = false;
 }
 
 async function buscarCEP() {
@@ -617,6 +643,7 @@ async function buscarCEP() {
       document.getElementById("input-rua").value = data.logradouro;
       document.getElementById("input-bairro").value = data.bairro;
       document.getElementById("input-cidade").value = `${data.localidade} - ${data.uf}`;
+      desmarcarRadios();
       document.getElementById("input-numero").focus();
     }
   } catch(e) {
@@ -626,16 +653,14 @@ async function buscarCEP() {
   }
 }
 
-async function finalizarPedido(tipo, valorTotal) {
-  if (itensParaComprarGlobal.length === 0) {
-    fecharModalEndereco();
-    return showToast("O seu carrinho de compras está vazio!", "error");
-  }
-
+// O Mestre do Roteamento: Lê a escolha (Radio ou Texto Novo) e encaminha para a central
+async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
   let enderecoFinal = "";
+  const radioSelecionado = document.querySelector('input[name="endereco-selecionado"]:checked');
 
-  if (tipo === 'salvo') {
-    enderecoFinal = document.getElementById("texto-endereco-salvo").dataset.endereco;
+  // LÓGICA DE EXCLUSIVIDADE: Se marcou a bolinha, usa o salvo. Se não, usa o digitado.
+  if (radioSelecionado) {
+    enderecoFinal = radioSelecionado.value;
   } else {
     const rua = document.getElementById("input-rua").value.trim();
     const num = document.getElementById("input-numero").value.trim();
@@ -644,22 +669,32 @@ async function finalizarPedido(tipo, valorTotal) {
     const cidade = document.getElementById("input-cidade").value.trim();
 
     if (!rua || !num || !bairro || !cidade) {
-      return showToast("Preencha Rua, Número, Bairro e Cidade!", "error");
+      return showToast("Preencha todos os campos do novo endereço ou selecione um dos seus endereços salvos!", "error");
     }
+
     enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${cidade}`;
 
-    const salvarNoBanco = document.getElementById("check-salvar-endereco").checked;
-    if (salvarNoBanco) {
+    // Se decidiu salvar este novo endereço na lista...
+    if (document.getElementById("check-salvar-endereco").checked) {
       try {
         await fetch(`${baseUrl}/perfil/endereco`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
           body: JSON.stringify({ endereco: enderecoFinal })
         });
-      } catch(e) {}
+      } catch(e) { console.warn("Erro ao salvar endereço no perfil."); }
     }
   }
 
+  // REDIRECIONA PARA A ROTA CORRETA DO BACKEND
+  if (modo === 'pedido') {
+    despacharPedidoNovo(enderecoFinal, valorTotal);
+  } else if (modo === 'redefinir') {
+    despacharMudancaRota(pedidoId, enderecoFinal);
+  }
+}
+
+async function despacharPedidoNovo(enderecoFinal, valorTotal) {
   try {
     const res = await fetch(`${baseUrl}/pedidos`, {
       method: "POST",
@@ -683,6 +718,25 @@ async function finalizarPedido(tipo, valorTotal) {
   } catch(e) {
     showToast("Falha de conexão com a central de entregas.", "error");
   }
+}
+
+async function despacharMudancaRota(pedidoId, enderecoFinal) {
+  try {
+    const res = await fetch(`${baseUrl}/pedidos/${pedidoId}/endereco-taxa`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+      body: JSON.stringify({ novoEndereco: enderecoFinal })
+    });
+    
+    const dados = await res.json();
+    if (res.ok) {
+      fecharModalEndereco();
+      showToast(dados.mensagem, "success");
+      carregarPedidosShopper();
+    } else {
+      showToast("Erro ao atualizar o endereço.", "error");
+    }
+  } catch (error) { showToast("Falha de conexão com a central.", "error"); }
 }
 
 // ==========================================
@@ -755,7 +809,7 @@ async function carregarPedidosShopper() {
           </div>
           
           <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button onclick="alterarEnderecoPedido('${p._id}')" style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.3s;">Mudar Rota (+R$ 3,00)</button>
+            <button onclick="abrirModalEndereco('redefinir', '${p._id}', 0)" style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.3s;">Mudar Rota (+R$ 3,00)</button>
             <button onclick="cancelarPedido('${p._id}')" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.3s;">Cancelar Pedido</button>
           </div>
           ` : ''}
@@ -769,21 +823,6 @@ async function carregarPedidosShopper() {
   timeoutPollingCliente = setTimeout(carregarPedidosShopper, 3000);
 }
 
-// NOVO: Rota para deletar endereço específico
-app.delete('/perfil/endereco', async (req, res) => {
-  try {
-    const userToken = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
-    const { endereco } = req.body;
-    const usuario = await User.findById(userToken.id);
-    usuario.enderecosSalvos = usuario.enderecosSalvos.filter(end => end !== endereco);
-    await usuario.save();
-    res.status(200).json({ mensagem: "Endereço removido!", enderecosSalvos: usuario.enderecosSalvos });
-  } catch (error) { res.status(500).json({ mensagem: "Erro." }); }
-});
-
-
-
-// Ações do Cliente sobre o Pedido Ativo
 async function cancelarPedido(id) {
   const confirmacao = confirm("Tem certeza que deseja cancelar este pedido? O motorista será notificado e a corrida será encerrada.");
   if (!confirmacao) return;
@@ -795,31 +834,9 @@ async function cancelarPedido(id) {
     });
     if (res.ok) {
       showToast("Pedido cancelado com sucesso.", "success");
-      carregarPedidosShopper(); // Recarrega a tela na hora
+      carregarPedidosShopper(); 
     } else {
       showToast("Erro ao cancelar o pedido.", "error");
-    }
-  } catch (error) { showToast("Falha de conexão com a central.", "error"); }
-}
-
-async function alterarEnderecoPedido(id) {
-  const novoEnd = prompt("Digite o novo endereço completo para onde o motorista deve ir agora:\n\n(Atenção: Uma taxa de redirecionamento de R$ 3,00 será adicionada ao valor final da compra).");
-  
-  if (!novoEnd || novoEnd.trim() === "") return;
-
-  try {
-    const res = await fetch(`${baseUrl}/pedidos/${id}/endereco-taxa`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
-      body: JSON.stringify({ novoEndereco: novoEnd })
-    });
-    
-    const dados = await res.json();
-    if (res.ok) {
-      showToast(dados.mensagem, "success");
-      carregarPedidosShopper();
-    } else {
-      showToast("Erro ao atualizar o endereço.", "error");
     }
   } catch (error) { showToast("Falha de conexão com a central.", "error"); }
 }
