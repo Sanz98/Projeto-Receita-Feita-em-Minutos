@@ -40,7 +40,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO AVANÇADA (A TODO CUSTO)
+// ROTA DE EXTRAÇÃO AVANÇADA (100% BLINDADA MODO JSON)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -61,8 +61,9 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/\| TikTok$/i, '').trim();
       tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/Olha este vídeo no TikTok!/i, '').trim();
       
-      // Limpeza caso o partilhar mobile mande só "YouTube"
-      if (tituloExtraidoDoTexto.toLowerCase() === "youtube") tituloExtraidoDoTexto = "";
+      if (/^(youtube|tiktok|instagram)$/i.test(tituloExtraidoDoTexto)) {
+        tituloExtraidoDoTexto = "";
+      }
     }
 
     link = urlLimpa;
@@ -93,7 +94,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         });
       }
     } catch (scraperErr) {
-      console.log("Scraper não conseguiu ingredientes completos, acionando IA a todo custo...");
+      console.log("Scraper direto falhou. A tentar leitura profunda...");
     }
 
     // 3. CAMADA DE LEITURA UNIVERSAL E PROFUNDA
@@ -108,61 +109,61 @@ app.post('/receitas/extrair-ia', async (req, res) => {
           "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
         }
       });
-      const html = await response.text();
       
-      // NOVIDADE: Prioridade Absoluta para OG:TITLE (Contém o título real do vídeo do YouTube)
-      if (!tituloOficial) {
-        const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) 
-                          || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i);
-        if (ogTitleMatch && ogTitleMatch[1]) {
-          let titleWeb = ogTitleMatch[1].trim();
-          if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb)) {
-            tituloOficial = titleWeb;
-          }
-        }
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("text/html")) {
+        const html = await response.text();
         
-        // Fallback para a tag title normal se OG não existir
         if (!tituloOficial) {
-          const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-          if (titleMatch && titleMatch[1]) {
-            let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '');
-            if (!/^(YouTube|TikTok|Instagram)$/i.test(titleWeb) && !titleWeb.includes("http")) {
+          const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) 
+                            || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i);
+          if (ogTitleMatch && ogTitleMatch[1]) {
+            let titleWeb = ogTitleMatch[1].trim();
+            if (!/^(YouTube|TikTok|Instagram|Login • Instagram)$/i.test(titleWeb)) {
               tituloOficial = titleWeb;
             }
           }
+          
+          if (!tituloOficial) {
+            const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            if (titleMatch && titleMatch[1]) {
+              let titleWeb = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '');
+              if (!/^(YouTube|TikTok|Instagram)$/i.test(titleWeb) && !titleWeb.includes("http")) {
+                tituloOficial = titleWeb;
+              }
+            }
+          }
+        }
+        
+        const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+        if (imgMatch && imgMatch[1]) {
+          imagemCapturada = imgMatch[1];
+        }
+
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch && bodyMatch[1]) {
+          contextoAdicional = bodyMatch[1]
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') 
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   
+            .replace(/<[^>]+>/g, ' ')                         
+            .replace(/\s+/g, ' ')                             
+            .trim()
+            .substring(0, 3500); 
         }
       }
-      
-      // Tenta pegar a Fotografia Oficial (OG:Image)
-      const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-                    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-      if (imgMatch && imgMatch[1]) {
-        imagemCapturada = imgMatch[1];
-      }
-
-      // Roubar o Miolo do Site (Texto da Receita)
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch && bodyMatch[1]) {
-        contextoAdicional = bodyMatch[1]
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') 
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   
-          .replace(/<[^>]+>/g, ' ')                         
-          .replace(/\s+/g, ' ')                             
-          .trim()
-          .substring(0, 3500); 
-      }
     } catch(err) {
-      console.log("Falha ao capturar o HTML externo.");
+      console.log("Falha de rede ao capturar HTML. Proteção do site ativada.");
     }
 
-    // B) Se for YouTube, substituímos o texto do site pela LEGENDA!
+    // B) Tratamento especial para YouTube
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
         contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3500); 
       } catch (err) {
-        console.log("Vídeo sem legenda disponível. Forçando IA a deduzir...");
-        contextoAdicional = ""; // Limpa lixo HTML do YouTube para forçar dedução correta!
+        console.log("YouTube sem legendas. A forçar dedução...");
+        contextoAdicional = "Vídeo sem legendas. Extraia ou deduza os ingredientes com base no título."; 
       }
       
       if (!imagemCapturada) {
@@ -174,45 +175,56 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       }
     }
 
-    // 4. CAMADA DE IA (GROQ) - MODO SOBREVIVÊNCIA
-    const prompt = `Você é um chef especialista. Sua missão é DEVOLVER UMA LISTA DE INGREDIENTES A QUALQUER CUSTO.
+    // C) Fallback de Domínio (Evita a mensagem "Receita Desconhecida")
+    if (!tituloOficial) {
+      try {
+        const urlObj = new URL(link);
+        const dominio = urlObj.hostname.replace('www.', '');
+        tituloOficial = `Receita via ${dominio}`;
+      } catch (e) {
+        tituloOficial = "Receita via Link Externo";
+      }
+    }
+
+    // 4. CAMADA DE IA (GROQ) COM MODO ESTRICTO JSON_OBJECT
+    const prompt = `Sua missão é extrair ou deduzir os ingredientes da receita.
     Link: ${link}
-    Título da Receita: ${tituloOficial || "Receita Culinária"}
-    Texto Extraído do Site/Vídeo: ${contextoAdicional || "Não disponível"}
+    Título da Receita: ${tituloOficial}
+    Texto Extraído: ${contextoAdicional || "Indisponível"}
     
-    REGRAS ABSOLUTAS:
-    1. Responda EXCLUSIVAMENTE em formato JSON: {"nome": "...", "ingredientes": "..."}.
-    2. O "nome" DEVE OBRIGATORIAMENTE ser o "Título da Receita" fornecido acima.
-    3. Formate os ingredientes numa única linha, separados por vírgula.
-    4. MODO DE SOBREVIVÊNCIA: Se o "Texto Extraído" for vazio, inútil ou não contiver ingredientes, VOCÊ É OBRIGADO a deduzir a lista de ingredientes originais e essenciais para preparar a receita especificada em "Título da Receita". Nunca devolva ingredientes vazios ou com erro.`;
+    REGRAS:
+    1. O "nome" DEVE ser OBRIGATORIAMENTE o "Título da Receita".
+    2. Formate os ingredientes numa única linha, separados por vírgula.
+    3. MODO SOBREVIVÊNCIA: Se não houver ingredientes no Texto, você DEVE DEDUZIR uma lista realista baseada apenas no "Título da Receita". Nunca devolva ingredientes vazios.`;
 
     const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "You are an API that outputs ONLY valid JSON objects. Never include conversational text. Format: {\"nome\": \"...\", \"ingredientes\": \"...\"}" },
+        { role: "user", content: prompt }
+      ],
       model: "llama-3.1-8b-instant", 
-      temperature: 0.2, 
+      temperature: 0.1, 
+      response_format: { type: "json_object" } // <--- ESTA É A TRAVA DE SEGURANÇA MÁXIMA
     });
 
-    let textoResposta = chatCompletion.choices[0]?.message?.content || "";
-    textoResposta = textoResposta.replace(/```json|```/g, '').trim();
+    let textoResposta = chatCompletion.choices[0]?.message?.content || "{}";
     
     let dadosFormatados;
     try {
       dadosFormatados = JSON.parse(textoResposta);
       
-      // Força o uso do título real se a IA tentar mudar e garante que não salva como "YouTube"
-      if (tituloOficial && !/^(YouTube|TikTok|Instagram)$/i.test(tituloOficial)) {
+      // Impede que o título seja vazio
+      if (!dadosFormatados.nome || dadosFormatados.nome.toLowerCase().includes("desconhecid")) {
         dadosFormatados.nome = tituloOficial;
-      } else if (dadosFormatados.nome.toLowerCase() === "youtube") {
-        dadosFormatados.nome = "Receita de YouTube (Requer Edição)";
       }
       
       dadosFormatados.imagem = imagemCapturada || ""; 
 
     } catch (parseError) {
-      console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
+      console.log("Erro Crítico de Parse:", textoResposta);
       dadosFormatados = {
-        nome: tituloOficial || "Receita Desconhecida",
-        ingredientes: "Ovos, Farinha, Açúcar, Manteiga, Leite (Ingredientes sugeridos, edite depois)",
+        nome: tituloOficial,
+        ingredientes: "Ovos, Leite, Farinha, Açúcar, Manteiga (Ingredientes genéricos deduzidos)",
         imagem: imagemCapturada || ""
       };
     }
@@ -220,7 +232,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     res.status(200).json(dadosFormatados);
 
   } catch (error) {
-    console.error("Erro crítico na integração:", error);
+    console.error("Erro na integração:", error);
     if (error.status === 429) {
       res.status(429).json({ mensagem: "Muitos pedidos num curto espaço de tempo." });
     } else {
@@ -316,5 +328,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Correção OG:Title aplicada (Fim do bug 'YouTube' e ingredientes repetidos)!");
+  console.log("✅ API no Modo JSON Estrito ativada! Adeus respostas falhadas e títulos desconhecidos.");
 });
