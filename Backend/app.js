@@ -43,18 +43,11 @@ app.post('/users/register', async (req, res) => {
     if (userExists) return res.status(400).json({ mensagem: "Este usuário já existe no sistema!" });
     
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const newUser = new User({ 
-      username, 
-      password: hashedPassword, 
-      perfil: perfil || 'cliente' 
-    });
+    const newUser = new User({ username, password: hashedPassword, perfil: perfil || 'cliente' });
     
     await newUser.save();
     res.status(201).json({ mensagem: "Conta criada com sucesso!" });
-  } catch (err) { 
-    res.status(500).json({ mensagem: "Erro interno ao criar conta." }); 
-  }
+  } catch (err) { res.status(500).json({ mensagem: "Erro interno ao criar conta." }); }
 });
 
 app.post('/users/login', async (req, res) => {
@@ -69,14 +62,11 @@ app.post('/users/login', async (req, res) => {
     
     const token = jwt.sign({ id: user._id, username: user.username, perfil: user.perfil }, SECRET);
     res.status(200).json({ token, perfil: user.perfil }); 
-  } catch (err) { 
-    res.status(500).json({ mensagem: "Erro interno no login." }); 
-  }
+  } catch (err) { res.status(500).json({ mensagem: "Erro interno no login." }); }
 });
 
 const rotasReceitas = require('./src/routes/receitas');
 const rotasUsuarios = require('./src/routes/users');
-
 app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
@@ -89,12 +79,10 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     if (!link) return res.status(400).json({ mensagem: "Por favor, forneça um link válido." });
     let urlLimpa = link;
     let tituloExtraidoDoTexto = "";
-    const urlRegex = /(https?:\/\/[^\s]+)/;
-    const matchUrl = link.match(urlRegex);
+    const matchUrl = link.match(/(https?:\/\/[^\s]+)/);
     if (matchUrl) {
       urlLimpa = matchUrl[1]; 
-      tituloExtraidoDoTexto = link.replace(urlLimpa, '').trim(); 
-      tituloExtraidoDoTexto = tituloExtraidoDoTexto.replace(/- YouTube$/i, '').trim().replace(/\| TikTok$/i, '').trim().replace(/Olha este vídeo no TikTok!/i, '').trim();
+      tituloExtraidoDoTexto = link.replace(urlLimpa, '').trim().replace(/- YouTube$/i, '').trim().replace(/\| TikTok$/i, '').trim().replace(/Olha este vídeo no TikTok!/i, '').trim();
       if (/^(youtube|tiktok|instagram)$/i.test(tituloExtraidoDoTexto)) tituloExtraidoDoTexto = "";
     }
     link = urlLimpa;
@@ -109,15 +97,13 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       if (data.ingredients && data.ingredients.length > 0) return res.status(200).json({ nome: tituloOficial || data.title, ingredientes: data.ingredients.join(', '), imagem: data.image || "", origem: "scraper" });
     } catch (scraperErr) {}
 
-    let contextoAdicional = "";
-    let imagemCapturada = "";
+    let contextoAdicional = ""; let imagemCapturada = "";
 
     if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
       try {
         let oembedUrl = "";
         if (link.includes("youtube.com") || link.includes("youtu.be")) oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(link)}&format=json`;
         else if (link.includes("tiktok.com")) oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`;
-        
         if (oembedUrl) {
           const oembedRes = await fetch(oembedUrl);
           if (oembedRes.ok) {
@@ -131,8 +117,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
     try {
       const response = await fetch(link, { headers: { "User-Agent": "Mozilla/5.0", "Accept-Language": "pt-BR" } });
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("text/html")) {
+      if (response.headers.get("content-type")?.includes("text/html")) {
         const html = await response.text();
         if (!tituloOficial || /^(youtube|tiktok|instagram)$/i.test(tituloOficial)) {
           const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["']/i);
@@ -148,10 +133,7 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     } catch(err) {}
 
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
-      try {
-        const transcript = await YoutubeTranscript.fetchTranscript(link);
-        contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3500); 
-      } catch (err) {}
+      try { contextoAdicional = (await YoutubeTranscript.fetchTranscript(link)).map(t => t.text).join(' ').substring(0, 3500); } catch (err) {}
       if (!imagemCapturada) {
         const match = link.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
         if (match && match[1].length === 11) imagemCapturada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
@@ -175,15 +157,12 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 });
 
 // ==========================================
-// SISTEMA REAL DE DELIVERY COM GPS
+// SISTEMA REAL DE DELIVERY COM ENDEREÇOS
 // ==========================================
 app.post('/pedidos', async (req, res) => {
   try {
     const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
-    
-    // Apanha o endereço real enviado pelo GPS do cliente (ou fallback caso tenha sido negado)
     const { itens, itensContagem, valorTotal, endereco } = req.body;
-    const enderecoFinal = endereco || "Localização GPS não fornecida pelo cliente";
 
     await new Pedido({ 
       clienteId: user.id, 
@@ -191,7 +170,7 @@ app.post('/pedidos', async (req, res) => {
       itens, 
       itensContagem, 
       valorTotal, 
-      endereco: enderecoFinal 
+      endereco 
     }).save();
 
     res.status(201).json({ mensagem: "Pedido enviado!" });
@@ -231,8 +210,24 @@ app.put('/pedidos/:id/entregar', async (req, res) => {
 });
 
 // ==========================================
-// AVALIAÇÕES E PERFIL
+// AVALIAÇÕES E PERFIL (COM MEMÓRIA DE ENDEREÇO)
 // ==========================================
+app.get('/perfil/dados', async (req, res) => {
+  try {
+    const userToken = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
+    const userData = await User.findById(userToken.id);
+    res.status(200).json({ enderecoSalvo: userData.enderecoSalvo || "" });
+  } catch (error) { res.status(500).json({ mensagem: "Erro ao buscar dados do perfil." }); }
+});
+
+app.put('/perfil/endereco', async (req, res) => {
+  try {
+    const userToken = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
+    await User.findByIdAndUpdate(userToken.id, { enderecoSalvo: req.body.endereco });
+    res.status(200).json({ mensagem: "Endereço salvo com sucesso!" });
+  } catch (error) { res.status(500).json({ mensagem: "Erro ao salvar endereço." }); }
+});
+
 app.post('/avaliacoes', async (req, res) => {
   try {
     const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
@@ -276,6 +271,7 @@ app.post('/users/esqueci-senha', async (req, res) => {
   tokensRecuperacaoMemoria[username] = String(token);
   res.status(200).json({ mensagem: "Token emitido.", link: `redefinirSenha.html?username=${username}&token=${token}` });
 });
+
 app.post('/users/redefinir-senha', async (req, res) => {
   const { username, token, novaSenha } = req.body;
   if (tokensRecuperacaoMemoria[username] !== String(token)) return res.status(400).json({ mensagem: "Token inválido." });
@@ -290,5 +286,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log("✅ Sistema Back-end com Geolocalização de GPS e Perfis Ativos!");
+  console.log("✅ API Inteligente de Delivery com CEP e Endereços Automáticos Ativada!");
 });

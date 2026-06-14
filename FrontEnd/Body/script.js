@@ -164,7 +164,7 @@ async function carregar() {
     }
 
     if (!res.ok) {
-      console.warn("Aviso: O servidor devolveu um erro ao tentar carregar as receitas.");
+      console.warn("Aviso: O servidor retornou um erro ao tentar carregar as receitas.");
       return;
     }
 
@@ -361,7 +361,7 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
     }
   } catch (error) {
     console.error("Erro crítica na requisição PUT:", error);
-    showToast("Erro crítica na requisição ao servidor.", "error");
+    showToast("Erro de requisição ao servidor.", "error");
   }
 }
 
@@ -484,7 +484,7 @@ function capturarItensParaFaltantes() {
 }
 
 // ==========================================
-// ABA DE LISTA DE COMPRAS E MÁGICA GPS
+// ABA DE LISTA DE COMPRAS
 // ==========================================
 function atualizarListaCompras() {
   const container = document.getElementById("lista-compras-itens");
@@ -522,67 +522,172 @@ function atualizarListaCompras() {
 
   const btnConfirmar = document.querySelector("#compras .btn-primary");
   if (btnConfirmar) {
-    btnConfirmar.setAttribute("onclick", `fecharPedidoShopper(${valorTotal})`);
+    btnConfirmar.setAttribute("onclick", `abrirModalEndereco(${valorTotal})`);
   }
 }
 
-// O Cliente solicita o pedido capturando GPS
-async function fecharPedidoShopper(valorTotal) {
-  if (itensParaComprarGlobal.length === 0) return showToast("O seu carrinho de compras está vazio!", "error");
+// ==========================================
+// MODAL INTELIGENTE DE ENDEREÇOS (VIACEP E MEMÓRIA)
+// ==========================================
+function abrirModalEndereco(valorTotal) {
+  let modal = document.getElementById('modal-endereco');
+  if(modal) modal.remove();
 
-  const processarPedido = async (enderecoFinal) => {
-    try {
-      const res = await fetch(`${baseUrl}/pedidos`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${obterToken()}`
-        },
-        body: JSON.stringify({
-          itens: itensParaComprarGlobal.join(', '),
-          itensContagem: itensParaComprarGlobal.length,
-          valorTotal: valorTotal.toFixed(2),
-          endereco: enderecoFinal // Endereço 100% Real
-        })
-      });
+  modal = document.createElement('div');
+  modal.id = 'modal-endereco';
+  modal.innerHTML = `
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+      <div style="background: #202024; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #323238; max-height: 90vh; overflow-y: auto; font-family: 'Poppins', sans-serif;">
+        <h3 style="color: #f5f5f5; margin-top: 0; font-size: 1.3rem;">Onde devemos entregar?</h3>
+        <p style="color: #a3a3a3; font-size: 0.85rem; margin-bottom: 20px;">Confirme seu endereço exato para o motorista.</p>
 
-      if (res.ok) {
-        itensParaComprarGlobal = []; 
-        showToast("Pedido confirmado! Enviando para a central de motoristas...", "success");
-        navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
-      } else {
-        showToast("Erro ao criar pedido no servidor.", "error");
+        <div id="area-endereco-salvo" style="display: none; margin-bottom: 20px; background: #1c1c1e; padding: 15px; border-radius: 8px; border: 1px solid #10b981;">
+          <p style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin: 0 0 5px 0;">Meu Endereço Salvo</p>
+          <p id="texto-endereco-salvo" style="color: #f5f5f5; font-size: 0.9rem; margin: 0 0 12px 0;"></p>
+          <button onclick="finalizarPedido('salvo', ${valorTotal})" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Entregar neste endereço</button>
+        </div>
+
+        <div id="divisor-ou" style="display: none; text-align: center; color: #737373; font-size: 0.85rem; margin-bottom: 15px;">OU DIGITE UM NOVO ENDEREÇO</div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-cep" placeholder="Digite seu CEP" maxlength="9" onkeyup="mascaraCEP(this)" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; outline: none;">
+          <button id="btn-buscar-cep" onclick="buscarCEP()" style="padding: 0 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.3s;">Buscar</button>
+        </div>
+
+        <input type="text" id="input-rua" placeholder="Rua / Logradouro" style="width: 100%; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; margin-bottom: 10px; box-sizing: border-box; outline: none;">
+
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <input type="text" id="input-numero" placeholder="Número" style="width: 35%; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-complemento" placeholder="Complemento (Ex: Apto 3)" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="input-bairro" placeholder="Bairro" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+          <input type="text" id="input-cidade" placeholder="Cidade - UF" style="flex: 1; padding: 14px; background: #121214; border: 1px solid #323238; border-radius: 8px; color: #f5f5f5; box-sizing: border-box; outline: none;">
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 10px; color: #a3a3a3; font-size: 0.85rem; margin-bottom: 25px; cursor: pointer;">
+          <input type="checkbox" id="check-salvar-endereco" style="width: 18px; height: 18px; accent-color: #10b981;"> Salvar este endereço para as próximas compras
+        </label>
+
+        <button onclick="finalizarPedido('novo', ${valorTotal})" style="width: 100%; padding: 14px; background: #FF6B00; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">Confirmar e Pedir</button>
+
+        <button onclick="fecharModalEndereco()" style="width: 100%; padding: 12px; background: transparent; color: #a3a3a3; border: none; cursor: pointer; font-weight: 500;">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Busca na base de dados se o cliente já tinha salvo um endereço antes
+  fetch(`${baseUrl}/perfil/dados`, { headers: { "Authorization": `Bearer ${obterToken()}` } })
+    .then(res => res.json())
+    .then(data => {
+      if (data.enderecoSalvo) {
+        document.getElementById("area-endereco-salvo").style.display = "block";
+        document.getElementById("divisor-ou").style.display = "block";
+        document.getElementById("texto-endereco-salvo").innerText = data.enderecoSalvo;
+        document.getElementById("texto-endereco-salvo").dataset.endereco = data.enderecoSalvo;
       }
-    } catch(e) {
-      showToast("Falha de conexão à central de entregas.", "error");
+    });
+}
+
+function fecharModalEndereco() {
+  const modal = document.getElementById('modal-endereco');
+  if (modal) modal.remove();
+}
+
+function mascaraCEP(input) {
+  let v = input.value.replace(/\D/g, "");
+  if (v.length > 5) v = v.substring(0, 5) + "-" + v.substring(5, 8);
+  input.value = v;
+}
+
+// Consome a API Pública ViaCEP para achar a rua do cliente
+async function buscarCEP() {
+  const cep = document.getElementById("input-cep").value.replace(/\D/g, "");
+  if (cep.length !== 8) return showToast("Digite um CEP válido com 8 números!", "error");
+  
+  const btn = document.getElementById("btn-buscar-cep");
+  btn.innerText = "...";
+  
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await res.json();
+    if (data.erro) {
+      showToast("CEP não encontrado.", "error");
+    } else {
+      document.getElementById("input-rua").value = data.logradouro;
+      document.getElementById("input-bairro").value = data.bairro;
+      document.getElementById("input-cidade").value = `${data.localidade} - ${data.uf}`;
+      document.getElementById("input-numero").focus();
     }
-  };
+  } catch(e) {
+    showToast("Erro ao buscar o CEP.", "error");
+  } finally {
+    btn.innerText = "Buscar";
+  }
+}
 
-  // CAPTURA DE GPS REAL
-  if (navigator.geolocation) {
-    showToast("Permita o uso do GPS para calcularmos a entrega exata...", "success");
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      let enderecoGPS = `Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+// O Cliente finaliza enviando os dados precisos para o Motorista
+async function finalizarPedido(tipo, valorTotal) {
+  if (itensParaComprarGlobal.length === 0) {
+    fecharModalEndereco();
+    return showToast("O seu carrinho de compras está vazio!", "error");
+  }
 
-      try {
-        // Usa OpenStreetMap (Nominatim) para converter Latitude/Longitude no Nome da Rua real!
-        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const geoData = await geoRes.json();
-        if (geoData && geoData.display_name) {
-          enderecoGPS = geoData.display_name; 
-        }
-      } catch(e) {
-        console.warn("Falha ao traduzir GPS para nome de rua. Usando coordenadas.");
-      }
-      
-      processarPedido(enderecoGPS);
-    }, (error) => {
-      processarPedido("Localização GPS não fornecida pelo cliente");
-    }, { timeout: 10000 });
+  let enderecoFinal = "";
+
+  if (tipo === 'salvo') {
+    enderecoFinal = document.getElementById("texto-endereco-salvo").dataset.endereco;
   } else {
-    processarPedido("Geolocalização não suportada neste dispositivo");
+    const rua = document.getElementById("input-rua").value.trim();
+    const num = document.getElementById("input-numero").value.trim();
+    const comp = document.getElementById("input-complemento").value.trim();
+    const bairro = document.getElementById("input-bairro").value.trim();
+    const cidade = document.getElementById("input-cidade").value.trim();
+
+    if (!rua || !num || !bairro || !cidade) {
+      return showToast("Preencha Rua, Número, Bairro e Cidade!", "error");
+    }
+
+    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''} - ${bairro}, ${cidade}`;
+
+    // Se o cliente quer salvar para a próxima vez, enviamos um PUT para o backend
+    const salvarNoBanco = document.getElementById("check-salvar-endereco").checked;
+    if (salvarNoBanco) {
+      try {
+        await fetch(`${baseUrl}/perfil/endereco`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+          body: JSON.stringify({ endereco: enderecoFinal })
+        });
+      } catch(e) { console.warn("Erro ao salvar endereço no perfil."); }
+    }
+  }
+
+  // Despacha a entrega oficial para a central MongoDB
+  try {
+    const res = await fetch(`${baseUrl}/pedidos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+      body: JSON.stringify({
+        itens: itensParaComprarGlobal.join(', '),
+        itensContagem: itensParaComprarGlobal.length,
+        valorTotal: valorTotal.toFixed(2),
+        endereco: enderecoFinal // Endereço Limpo e Real
+      })
+    });
+
+    if (res.ok) {
+      itensParaComprarGlobal = []; 
+      fecharModalEndereco();
+      showToast("Pedido confirmado! Buscando motoristas disponíveis...", "success");
+      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+    } else {
+      showToast("Erro ao criar pedido no servidor.", "error");
+    }
+  } catch(e) {
+    showToast("Falha de conexão com a central de entregas.", "error");
   }
 }
 
@@ -629,7 +734,7 @@ async function carregarPedidosShopper() {
         tempoText = "Concluído";
       }
 
-      // NOVIDADE: Mapa centralizado usando o endereço do cliente!
+      // O mapa agora é centralizado 100% no endereço que o cliente escolheu!
       const mapaReal = `https://maps.google.com/maps?q=${encodeURIComponent(p.endereco || 'Sumaré, SP')}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 
       return `
@@ -665,19 +770,27 @@ async function carregarPedidosShopper() {
 }
 
 // ==========================================
-// HISTÓRICO E AVALIAÇÕES (MANTIDOS)
+// HISTÓRICO DE RECEITAS
 // ==========================================
 async function carregarHistorico() {
   try {
-    const res = await fetch(API, { headers: { "Authorization": `Bearer ${obterToken()}` }});
+    const res = await fetch(API, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+    
     if (!res.ok) return;
+
     const data = await res.json();
     receitasGlobais = Array.isArray(data) ? data : [];
+
     const lista = document.getElementById("lista-historico");
     if (!lista) return;
     lista.innerHTML = "";
+
     receitasGlobais.forEach((r, index) => {
       const img = r.imagem || gerarImagemReceita(r.nome, r.link);
+
       lista.innerHTML += `
         <div class="historico-card" style="margin-bottom: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -685,7 +798,8 @@ async function carregarHistorico() {
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
               <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
-                <span style="color: #a3a3a3;">Sincronizado via Extração</span><span style="color: #10b981;">Ativo</span>
+                <span style="color: #a3a3a3;">Sincronizado via Extração</span>
+                <span style="color: #10b981;">Ativo</span>
               </div>
             </div>
           </div>
@@ -695,29 +809,72 @@ async function carregarHistorico() {
         </div>
       `;
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Erro ao carregar histórico:", error);
+  }
 }
 
+// ==========================================
+// SISTEMA DE AVALIAÇÃO (ESTRELAS)
+// ==========================================
 let notaSelecionada = 0;
+
 function hoverEstrela(valor) {
-  document.querySelectorAll(".star").forEach(star => { star.style.color = star.getAttribute("data-value") <= valor ? "#FFB800" : "#323238"; });
+  const stars = document.querySelectorAll(".star");
+  stars.forEach(star => {
+    if (star.getAttribute("data-value") <= valor) {
+      star.style.color = "#FFB800"; 
+    } else {
+      star.style.color = "#323238"; 
+    }
+  });
 }
-function resetEstrelas() { hoverEstrela(notaSelecionada); }
-function selecionarNota(valor) { notaSelecionada = valor; hoverEstrela(valor); }
+
+function resetEstrelas() {
+  hoverEstrela(notaSelecionada); 
+}
+
+function selecionarNota(valor) {
+  notaSelecionada = valor;
+  hoverEstrela(valor);
+}
 
 async function enviarAvaliacao() {
-  if (notaSelecionada === 0) return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
+  if (notaSelecionada === 0) {
+    return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
+  }
+
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
+
   try {
-    const res = await fetch(`${baseUrl}/avaliacoes`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nota: notaSelecionada, comentario: comentario }) });
+    const res = await fetch(`${baseUrl}/avaliacoes`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${obterToken()}` 
+      },
+      body: JSON.stringify({ nota: notaSelecionada, comentario: comentario })
+    });
+
     if (res.ok) {
-      notaSelecionada = 0; resetEstrelas(); document.getElementById("comentario-avaliacao").value = "";
-      showToast("Avaliação enviada com sucesso!", "success"); navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+      notaSelecionada = 0;
+      resetEstrelas();
+      document.getElementById("comentario-avaliacao").value = "";
+      
+      showToast("Avaliação enviada com sucesso!", "success");
+      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
-      if (res.status === 401 || res.status === 403) { showToast("Sessão expirada! Por favor, faça login novamente.", "error"); sair(); } 
-      else { showToast("Erro ao enviar avaliação no servidor.", "error"); }
+      if (res.status === 401 || res.status === 403) {
+         showToast("Sessão expirada! Por favor, faça login novamente para avaliar.", "error");
+         sair();
+      } else {
+         showToast("Erro ao enviar avaliação no servidor.", "error");
+      }
     }
-  } catch (error) { showToast("Falha na conexão com o servidor.", "error"); }
+  } catch (error) {
+    console.error("Erro na avaliação:", error);
+    showToast("Falha na conexão com o servidor.", "error");
+  }
 }
 
 // ==========================================
@@ -726,37 +883,68 @@ async function enviarAvaliacao() {
 function carregarPerfil() {
   const token = obterToken();
   if (token !== "jwt-fake") {
-    try { document.getElementById('perfil-username').innerText = JSON.parse(atob(token.split('.')[1])).username || "Usuário"; } 
-    catch(e) {}
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      document.getElementById('perfil-username').innerText = payload.username || "Usuário";
+    } catch(e) {
+      console.error("Erro ao decodificar perfil:", e);
+    }
   }
 }
 
 async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
+
   if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
   if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
 
   try {
-    const res = await fetch(`${baseUrl}/perfil/senha`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ senhaAtual, novaSenha }) });
+    const res = await fetch(`${baseUrl}/perfil/senha`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${obterToken()}`
+      },
+      body: JSON.stringify({ senhaAtual, novaSenha })
+    });
+
     const dados = await res.json();
+
     if (res.ok) {
       showToast(dados.mensagem, "success");
-      document.getElementById("senha-atual").value = ""; document.getElementById("nova-senha").value = "";
-    } else { showToast(dados.mensagem, "error"); }
-  } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
+      document.getElementById("senha-atual").value = "";
+      document.getElementById("nova-senha").value = "";
+    } else {
+      showToast(dados.mensagem, "error");
+    }
+  } catch (error) {
+    showToast("Erro de conexão com o servidor ao alterar a senha.", "error");
+  }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir a sua conta? TODOS os seus dados serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
-    const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
+    const res = await fetch(`${baseUrl}/perfil`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${obterToken()}` }
+    });
+
+    const dados = await res.json();
+    
     if (res.ok) {
-      showToast("Conta excluída com sucesso", "success"); setTimeout(() => sair(), 1500); 
-    } else { showToast("Erro ao excluir conta.", "error"); }
-  } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
+      showToast(dados.mensagem, "success");
+      setTimeout(() => sair(), 1500); 
+    } else {
+      showToast(dados.mensagem || "Erro ao excluir conta.", "error");
+    }
+  } catch (error) {
+    showToast("Erro de conexão com o servidor.", "error");
+  }
 }
 
+// Inicialização automática
 carregar();
