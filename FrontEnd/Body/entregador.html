@@ -67,11 +67,7 @@
       window.location.href = 'login.html';
     }
 
-    function sair() {
-      localStorage.clear();
-      window.location.href = 'login.html';
-    }
-
+    function sair() { localStorage.clear(); window.location.href = 'login.html'; }
     let baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
     function obterToken() { return localStorage.getItem('token'); }
 
@@ -80,60 +76,38 @@
 
     function showToast(message, type = 'success') {
       let container = document.getElementById('toast-container');
-      if (!container) {
-          container = document.createElement('div');
-          container.id = 'toast-container';
-          container.style.cssText = 'position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;';
-          document.body.appendChild(container);
-      }
-      const toast = document.createElement('div');
-      const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+      if (!container) { container = document.createElement('div'); container.id = 'toast-container'; container.style.cssText = 'position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;'; document.body.appendChild(container); }
+      const toast = document.createElement('div'); const bgColor = type === 'success' ? '#10b981' : '#ef4444';
       toast.style.cssText = `background: #202024; border-left: 4px solid ${bgColor}; color: #f5f5f5; padding: 16px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 500; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto;`;
-      toast.innerText = message;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3500);
+      toast.innerText = message; container.appendChild(toast); setTimeout(() => toast.remove(), 3500);
     }
 
-    // NOVIDADE: Motorista agora vigia se o cliente apagou a conta ou alterou a encomenda!
     async function buscarChamadas() {
       if (pedidoAtual) {
         try {
           const res = await fetch(`${baseUrl}/pedidos/verificar/${pedidoAtual._id}`);
           if (!res.ok) {
             showToast("ATENÇÃO: O Cliente cancelou a corrida ou a conta foi apagada!", "error");
-            pedidoAtual = null;
-            document.getElementById("secao-rastreio").style.display = "none";
-            document.getElementById("secao-chamadas").style.display = "block";
+            pedidoAtual = null; document.getElementById("secao-rastreio").style.display = "none"; document.getElementById("secao-chamadas").style.display = "block";
           } else {
             const pedidoValidado = await res.json();
             if(pedidoValidado.endereco !== pedidoAtual.endereco) {
               showToast("ALERTA DE ROTA: O cliente alterou o destino! Mapa atualizado.", "success");
               pedidoAtual.endereco = pedidoValidado.endereco;
-              
-              document.getElementById("detalhes-entrega").innerHTML = `
-                <strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br>
-                <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
-                <strong>NOVO Destino:</strong> <span style="color:#FFB800;">${pedidoAtual.endereco}</span>
-              `;
+              document.getElementById("detalhes-entrega").innerHTML = `<strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br> <strong>Carga:</strong> ${pedidoAtual.itens} <br><br> <strong>NOVO Destino:</strong> <span style="color:#FFB800;">${pedidoAtual.endereco}</span>`;
               document.getElementById("mapa-entregador").src = `https://maps.google.com/maps?q=${encodeURIComponent(pedidoAtual.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
             }
           }
         } catch(e) {}
-        
-        clearTimeout(pollingChamadasTimeout);
-        pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
-        return;
+        clearTimeout(pollingChamadasTimeout); pollingChamadasTimeout = setTimeout(buscarChamadas, 3000); return;
       }
 
       try {
         const res = await fetch(`${baseUrl}/pedidos/disponiveis`);
-        if (!res.ok) throw new Error("Falha na API");
         const chamados = await res.json();
-
         const container = document.getElementById("lista-chamadas-disponiveis");
-        if (chamados.length === 0) {
-          container.innerHTML = `<p style="color: #737373; text-align: center; margin-top: 20px;">Nenhum chamado pendente no sistema. Aguardando...</p>`;
-        } else {
+        if (chamados.length === 0) { container.innerHTML = `<p style="color: #737373; text-align: center; margin-top: 20px;">Nenhum chamado pendente no sistema. Aguardando...</p>`; } 
+        else {
           container.innerHTML = chamados.map(c => `
             <div class="historico-card" style="padding: 16px; margin-bottom: 16px; background: #202024; border: 1px solid #323238; border-radius: 12px;">
               <h4 style="margin: 0 0 8px 0; color: #f5f5f5;">Chamado Shopper #${c._id.substring(c._id.length - 4)}</h4>
@@ -141,62 +115,40 @@
               <p style="margin: 0 0 4px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Carga:</strong> ${c.itensContagem} Produtos</p>
               <p style="margin: 0 0 16px 0; font-size: 0.9rem; color: #a3a3a3;"><strong>Destino:</strong> ${c.endereco}</p>
               <button onclick="aceitarChamado('${c._id}')" style="width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Aceitar e Iniciar Rota</button>
-            </div>
-          `).join('');
+            </div>`).join('');
         }
       } catch(e) {}
-
-      clearTimeout(pollingChamadasTimeout);
-      pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
+      clearTimeout(pollingChamadasTimeout); pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
     }
 
     async function aceitarChamado(id) {
       try {
-        const res = await fetch(`${baseUrl}/pedidos/${id}/aceitar`, {
-          method: "PUT",
-          headers: { "Authorization": `Bearer ${obterToken()}` }
-        });
+        const res = await fetch(`${baseUrl}/pedidos/${id}/aceitar`, { method: "PUT", headers: { "Authorization": `Bearer ${obterToken()}` } });
         const dados = await res.json();
-
         if (res.ok) {
           pedidoAtual = dados.pedido;
-          document.getElementById("secao-chamadas").style.display = "none";
-          document.getElementById("secao-rastreio").style.display = "block";
-          document.getElementById("detalhes-entrega").innerHTML = `
-            <strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br>
-            <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
-            <strong>Destino:</strong> ${pedidoAtual.endereco}
-          `;
+          document.getElementById("secao-chamadas").style.display = "none"; document.getElementById("secao-rastreio").style.display = "block";
+          document.getElementById("detalhes-entrega").innerHTML = `<strong>Cliente:</strong> ${pedidoAtual.clienteNome} <br><br> <strong>Carga:</strong> ${pedidoAtual.itens} <br><br> <strong>Destino:</strong> ${pedidoAtual.endereco}`;
           document.getElementById("mapa-entregador").src = `https://maps.google.com/maps?q=${encodeURIComponent(pedidoAtual.endereco)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-          showToast("Corrida Aceita! O cliente já está acompanhando o seu mapa.", "success");
-        } else {
-          showToast(dados.mensagem || "Erro ao aceitar corrida.", "error"); 
-          buscarChamadas();
-        }
+          showToast("Corrida Aceita!", "success");
+        } else { showToast(dados.mensagem || "Erro ao aceitar corrida.", "error"); buscarChamadas(); }
       } catch(e) { showToast("Erro de conexão com a central.", "error"); }
     }
 
     async function confirmarEntrega() {
       try {
-        await fetch(`${baseUrl}/pedidos/${pedidoAtual._id}/entregar`, {
-          method: "PUT",
-          headers: { "Authorization": `Bearer ${obterToken()}` }
-        });
-        showToast("Entrega Finalizada! Excelente trabalho.", "success");
-        pedidoAtual = null;
-        document.getElementById("secao-rastreio").style.display = "none";
-        document.getElementById("secao-chamadas").style.display = "block";
+        await fetch(`${baseUrl}/pedidos/${pedidoAtual._id}/entregar`, { method: "PUT", headers: { "Authorization": `Bearer ${obterToken()}` } });
+        showToast("Entrega Finalizada!", "success"); pedidoAtual = null;
+        document.getElementById("secao-rastreio").style.display = "none"; document.getElementById("secao-chamadas").style.display = "block";
         buscarChamadas(); 
       } catch(e) { showToast("Erro ao finalizar entrega.", "error"); }
     }
 
-    // Modal Perfil
     function abrirPerfilEntregador() { document.getElementById('modal-perfil-entregador').style.display = 'flex'; }
     function fecharPerfilEntregador() { document.getElementById('modal-perfil-entregador').style.display = 'none'; document.getElementById('senha-atual-entregador').value = ''; document.getElementById('nova-senha-entregador').value = ''; }
 
     async function alterarSenhaEntregador() {
-      const senhaAtual = document.getElementById("senha-atual-entregador").value.trim();
-      const novaSenha = document.getElementById("nova-senha-entregador").value.trim();
+      const senhaAtual = document.getElementById("senha-atual-entregador").value.trim(); const novaSenha = document.getElementById("nova-senha-entregador").value.trim();
       if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
       if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
       try {
@@ -208,14 +160,13 @@
     }
 
     async function excluirContaEntregador() {
-      const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir a sua conta de motorista? Esta ação é irreversível!");
-      if (!confirmacao) return;
+      if (!confirm("Excluir conta de motorista? Esta ação é irreversível!")) return;
       try {
         const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
         const dados = await res.json();
-        if (res.ok) { showToast("Conta excluída com sucesso.", "success"); setTimeout(() => sair(), 1500); } 
+        if (res.ok) { showToast("Conta excluída!", "success"); setTimeout(() => sair(), 1500); } 
         else { showToast(dados.mensagem || "Erro ao excluir conta.", "error"); }
-      } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
+      } catch (error) { showToast("Erro no servidor.", "error"); }
     }
 
     buscarChamadas(); 
