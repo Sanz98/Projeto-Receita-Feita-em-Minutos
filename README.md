@@ -1,8 +1,8 @@
  Feito em Minutos (Receita Fácil) 🍳
+ https://projeto-receita-feita-em-minutos.onrender.com/
 ### Documentação do Projeto e Relatório Técnico Acadêmico de Engenharia de Software
 **Disciplina:** Metodologias de Desenvolvimento de Software / Engenharia de Software  
 **Metodologia Ágil Aplicada:** Scrum  
-
 ---
 
 ## 🏫 Informações Institucionais

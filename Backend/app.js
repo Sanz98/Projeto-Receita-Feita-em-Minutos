@@ -40,7 +40,7 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO AVANÇADA (COM LEITURA PROFUNDA DE HTML)
+// ROTA DE EXTRAÇÃO AVANÇADA (100% BLINDADA)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
@@ -73,10 +73,37 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       console.log("Scraper direto falhou. A iniciar leitura profunda do site...");
     }
 
-    // 3. CAMADA DE LEITURA (YOUTUBE OU HTML)
+    // 3. CAMADA DE LEITURA UNIVERSAL (TÍTULO PARA TODOS OS LINKS)
     let contextoAdicional = "";
     let imagemCapturada = "";
+    let tituloOficial = "";
 
+    // A) Vamos ROUBAR o HTML de QUALQUER link primeiro (com User-Agent para evitar bloqueios)
+    try {
+      const response = await fetch(link, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+        }
+      });
+      const html = await response.text();
+      
+      // Roubar o Título e limpar lixo (" - YouTube", quebras de linha)
+      const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleMatch && titleMatch[1]) {
+        tituloOficial = titleMatch[1].trim().replace(/\n/g, '').replace(/ - YouTube/g, '').replace(/ \| TikTok/g, '');
+      }
+      
+      // Roubar a Fotografia Oficial (OG:Image)
+      const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+      if (imgMatch && imgMatch[1]) {
+        imagemCapturada = imgMatch[1];
+      }
+    } catch(err) {
+      console.log("Falha ao capturar o HTML externo.");
+    }
+
+    // B) Se for YouTube, AGORA SIM puxamos a legenda também!
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
@@ -85,51 +112,26 @@ app.post('/receitas/extrair-ia', async (req, res) => {
         console.log("Vídeo sem legenda disponível.");
       }
       
-      const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
-      const match = link.match(regex);
-      if (match && match[1].length === 11) {
-        imagemCapturada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
-      }
-    } else {
-      // NOVIDADE: Ler o site para garantir Título e Imagem oficiais!
-      try {
-        const response = await fetch(link);
-        const html = await response.text();
-        
-        // Roubar o Título da Página
-        const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        const pageTitle = titleMatch ? titleMatch[1].trim() : "";
-        
-        // Roubar a Descrição
-        const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) 
-                       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
-        const pageDesc = descMatch ? descMatch[1].trim() : "";
-        
-        // Roubar a Fotografia Oficial do Site (OG:Image)
-        const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-                      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-        if (imgMatch && imgMatch[1]) {
-            imagemCapturada = imgMatch[1];
+      // Se a imagem não tiver sido capturada pelo HTML, força o padrão do YouTube
+      if (!imagemCapturada) {
+        const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
+        const match = link.match(regex);
+        if (match && match[1].length === 11) {
+          imagemCapturada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
         }
-        
-        contextoAdicional = `Título Oficial da Página: ${pageTitle}. Descrição: ${pageDesc}`;
-      } catch(err) {
-        console.log("Falha ao capturar o HTML da página externa.");
       }
     }
 
     // 4. CAMADA DE IA (Groq)
-    const prompt = `Você é um assistente culinário. Analise o seguinte contexto e extraia a receita.
+    const prompt = `Você é um assistente culinário. Extraia os ingredientes do seguinte contexto:
     Link: ${link}
-    Contexto extraído da página: ${contextoAdicional}
+    Título do Vídeo/Site: ${tituloOficial || "Desconhecido"}
+    Legenda Extraída: ${contextoAdicional || "Não disponível"}
     
     REGRAS ABSOLUTAS:
-    1. Formate os ingredientes numa única linha, separados por vírgula.
-    2. Responda EXCLUSIVAMENTE com um objeto JSON válido.
-    3. Use o "Título Oficial da Página" fornecido no contexto para ser o "nome" da receita.
-    4. Se não houver contexto nem título, devolva: {"nome": "Receita não identificada", "ingredientes": "Falha na leitura do link."}
-    
-    Responda apenas com o JSON:`;
+    1. Responda EXCLUSIVAMENTE em formato JSON: {"nome": "...", "ingredientes": "..."}.
+    2. O "nome" DEVE OBRIGATORIAMENTE ser o "Título do Vídeo/Site" fornecido acima.
+    3. Formate os ingredientes numa única linha, separados por vírgula.`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
@@ -143,13 +145,20 @@ app.post('/receitas/extrair-ia', async (req, res) => {
     let dadosFormatados;
     try {
       dadosFormatados = JSON.parse(textoResposta);
-      // Força o envio da Imagem Real que extraímos no Passo 3
+      
+      // INJEÇÃO FORÇADA: Ignora o que a IA pensou e FORÇA o uso do título real do site/vídeo
+      if (tituloOficial && tituloOficial !== "Desconhecido") {
+        dadosFormatados.nome = tituloOficial;
+      }
+      
+      // Força a imagem correta
       dadosFormatados.imagem = imagemCapturada || ""; 
+
     } catch (parseError) {
-      console.log("A IA falhou. Resposta enviada:", textoResposta);
+      console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
       dadosFormatados = {
-        nome: "Receita Desconhecida",
-        ingredientes: "Não conseguimos extrair as informações.",
+        nome: tituloOficial || "Receita Desconhecida",
+        ingredientes: "Não conseguimos extrair os detalhes desta receita.",
         imagem: imagemCapturada || ""
       };
     }
@@ -253,5 +262,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema de leitura profunda de HTML e Imagens ativado!");
+  console.log("✅ Sistema blindado: Extração universal de título + Injeção ativada!");
 });
