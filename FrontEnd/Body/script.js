@@ -624,6 +624,9 @@ function limparCamposNovoEndereco() {
   document.getElementById("check-salvar-endereco").checked = false;
 }
 
+// ==========================================
+// BUSCA DE CEP (FILTRAGEM E AUTO-PREENCHIMENTO)
+// ==========================================
 async function buscarCEP() {
   const cep = document.getElementById("input-cep").value.replace(/\D/g, "");
   if (cep.length !== 8) return showToast("Digite um CEP válido com 8 números!", "error");
@@ -637,11 +640,14 @@ async function buscarCEP() {
     if (data.erro) {
       showToast("CEP não encontrado.", "error");
     } else {
-      document.getElementById("input-rua").value = data.logradouro;
-      document.getElementById("input-bairro").value = data.bairro;
-      document.getElementById("input-cidade").value = `${data.localidade} - ${data.uf}`;
+      // Preenche os campos automaticamente com os dados da API
+      document.getElementById("input-rua").value = data.logradouro || "";
+      document.getElementById("input-bairro").value = data.bairro || "";
+      document.getElementById("input-cidade").value = (data.localidade && data.uf) ? `${data.localidade} - ${data.uf}` : "";
+      
       desmarcarRadios();
-      document.getElementById("input-numero").focus();
+      document.getElementById("input-numero").focus(); // Foca no número para facilitar
+      showToast("Endereço localizado!", "success");
     }
   } catch(e) {
     showToast("Erro ao buscar o CEP.", "error");
@@ -650,6 +656,50 @@ async function buscarCEP() {
   }
 }
 
+// ==========================================
+// VALIDAÇÃO FLEXÍVEL (SÓ CEP E NÚMERO OBRIGATÓRIOS)
+// ==========================================
+async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
+  let enderecoFinal = "";
+  const radioSelecionado = document.querySelector('input[name="endereco-selecionado"]:checked');
+
+  if (radioSelecionado) {
+    enderecoFinal = radioSelecionado.value;
+  } else {
+    // Pegando valores
+    const cep = document.getElementById("input-cep").value.trim();
+    const num = document.getElementById("input-numero").value.trim();
+    const rua = document.getElementById("input-rua").value.trim();
+    const bairro = document.getElementById("input-bairro").value.trim();
+    const cidade = document.getElementById("input-cidade").value.trim();
+    const comp = document.getElementById("input-complemento").value.trim();
+
+    // VALIDAÇÃO: Apenas CEP e Número são obrigatórios
+    if (!cep || !num) {
+      return showToast("Por favor, preencha o CEP e o Número!", "error");
+    }
+
+    // Montagem dinâmica do endereço
+    enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''}${bairro ? ' - ' + bairro : ''}${cidade ? ' - ' + cidade : ''} (CEP: ${cep})`;
+
+    // Salvar novo endereço se marcado
+    if (document.getElementById("check-salvar-endereco").checked) {
+      try {
+        await fetch(`${baseUrl}/perfil/endereco`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` },
+          body: JSON.stringify({ endereco: enderecoFinal })
+        });
+      } catch(e) { console.warn("Erro ao salvar endereço no perfil."); }
+    }
+  }
+
+  if (modo === 'pedido') {
+    despacharPedidoNovo(enderecoFinal, valorTotal);
+  } else if (modo === 'redefinir') {
+    despacharMudancaRota(pedidoId, enderecoFinal);
+  }
+}
 // O Mestre do Roteamento: Lê a escolha (Radio ou Texto Novo) e encaminha para a central
 async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
   let enderecoFinal = "";
