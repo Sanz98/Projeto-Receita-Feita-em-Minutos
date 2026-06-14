@@ -11,7 +11,7 @@
 
   <div style="background: #1c1c1e; padding: 20px; border-bottom: 1px solid #323238; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
     <div>
-      <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #10b981;">Painel do Estafeta</h2>
+      <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #10b981;">Painel do Entregador</h2>
       <span style="font-size: 0.85rem; color: #a3a3a3;">Modo: Salário Fixo Ativo</span>
     </div>
     <button onclick="sair()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Sair</button>
@@ -22,13 +22,13 @@
     <div id="secao-chamadas">
       <h3 style="font-size: 1.1rem; font-weight: 600; color: #f5f5f5; margin-bottom: 16px;">Pedidos Disponíveis na Região</h3>
       <div id="lista-chamadas-disponiveis">
-        <p style="color: #737373; text-align: center; margin-top: 20px;">A procurar chamadas na base de dados...</p>
+        <p style="color: #737373; text-align: center; margin-top: 20px;">Buscando chamados no banco de dados...</p>
       </div>
     </div>
 
     <div id="secao-rastreio" style="display: none;">
       <div class="historico-card" style="padding: 20px; border-left: 4px solid #10b981; background: #202024; border-radius: 12px; border: 1px solid #323238;">
-        <h3 style="margin-top: 0; margin-bottom: 15px; color: #10b981; font-weight: 700;">Pedido Aceite • Rota Ativa</h3>
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #10b981; font-weight: 700;">Pedido Aceito • Rota Ativa</h3>
         <p id="detalhes-entrega" style="color: #e5e5e5; font-size: 0.95rem; line-height: 1.6;"></p>
         
         <div style="margin: 20px 0; width: 100%; height: 250px; border-radius: 12px; overflow: hidden; border: 1px solid #323238;">
@@ -40,6 +40,8 @@
     </div>
 
   </div>
+
+  <div id="toast-container" style="position: fixed; bottom: 30px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 12px; pointer-events: none; align-items: flex-end;"></div>
 
   <script>
     if (localStorage.getItem('logado') !== 'true' || localStorage.getItem('perfil') !== 'entregador') {
@@ -74,7 +76,7 @@
     }
 
     async function buscarChamadas() {
-      if (pedidoAtual) return; // Pausa o radar se já estou numa entrega
+      if (pedidoAtual) return;
 
       try {
         const res = await fetch(`${baseUrl}/pedidos/disponiveis`);
@@ -99,7 +101,6 @@
           console.error("Erro ao buscar chamadas:", e);
       }
 
-      // O radar do motorista procura novas chamadas a cada 3 segundos
       clearTimeout(pollingChamadasTimeout);
       pollingChamadasTimeout = setTimeout(buscarChamadas, 3000);
     }
@@ -121,13 +122,12 @@
             <strong>Carga:</strong> ${pedidoAtual.itens} <br><br>
             <strong>Endereço:</strong> ${pedidoAtual.endereco}
           `;
-          showToast("Corrida Aceite! O Cliente já está a ver o seu mapa.", "success");
+          showToast("Corrida Aceita! O cliente já está acompanhando o seu mapa.", "success");
         } else {
-          // Erro atómico: Outro entregador clicou um milissegundo antes!
-          showToast(dados.mensagem || "Erro ao aceitar corrida", "error"); 
+          showToast(dados.mensagem || "Erro ao aceitar corrida.", "error"); 
           buscarChamadas();
         }
-      } catch(e) { showToast("Erro de ligação com a central.", "error"); }
+      } catch(e) { showToast("Erro de conexão com a central.", "error"); }
     }
 
     async function confirmarEntrega() {
@@ -141,13 +141,12 @@
         pedidoAtual = null;
         document.getElementById("secao-rastreio").style.display = "none";
         document.getElementById("secao-chamadas").style.display = "block";
-        buscarChamadas(); // Reinicia o radar para o próximo trabalho
+        buscarChamadas(); 
       } catch(e) {
           showToast("Erro ao finalizar entrega.", "error");
       }
     }
 
-    // Inicia a aplicação do motorista
     buscarChamadas(); 
   </script>
 </body>

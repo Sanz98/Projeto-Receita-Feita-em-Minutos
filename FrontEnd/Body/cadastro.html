@@ -1,38 +1,64 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro - Feito em Minutos</title>
-  <link rel="stylesheet" href="Style/styles.css">
+  <title>Criar Conta | Feito em Minutos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg-dark: #121214; --card-dark: #202024; --primary-food: #FF6B00; --primary-hover: #E55C00; --text-light: #F8F8F2; --text-muted: #A1A1AA; --border-color: #323238; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #3a1a05, var(--bg-dark) 50%); }
+    .auth-container { background: var(--card-dark); padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+    .logo-icon { width: 48px; height: 48px; background: rgba(255, 107, 0, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary-food); margin-bottom: 24px; }
+    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+    .input-group { margin-bottom: 20px; text-align: left; }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+    .input-group input, .input-group select { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-light); padding: 14px 16px; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border 0.3s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--primary-food); }
+    .btn-primary { background: var(--primary-food); color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    #msg-aviso { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 20px; display: none; border: 1px solid rgba(239, 68, 68, 0.2); }
+  </style>
 </head>
 <body>
-
-<div class="login-container">
-  <div class="login-card">
-    <div class="logo-icon mx-auto mb-4">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+  <div class="auth-container">
+    <div class="logo-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
     </div>
     
-    <h2 class="login-title">Criar nova conta</h2>
-    <p class="login-subtitle">Junte-se ao Feito em Minutos hoje mesmo.</p>
-    
-    <form class="form" onsubmit="cadastrarUsuario(event)">
-      <input type="text" id="new-username" placeholder="Escolha um usuário" required>
-      <input type="password" id="new-password" placeholder="Crie uma senha forte" required>
+    <h2>Criar Conta</h2>
+    <p class="subtitle">Junte-se à nossa plataforma.</p>
+
+    <div id="msg-aviso"></div>
+
+    <form onsubmit="cadastrarUsuario(event)">
+      <div class="input-group">
+        <label for="new-username">Nome de Usuário</label>
+        <input type="text" id="new-username" placeholder="Crie um usuário" required>
+      </div>
       
-      <p id="msg-aviso" class="error-msg" style="display: none;"></p>
+      <div class="input-group">
+        <label for="new-password">Senha</label>
+        <input type="password" id="new-password" placeholder="Crie uma senha" required />
+      </div>
+
+      <div class="input-group">
+        <label for="new-perfil">Tipo de Conta</label>
+        <select id="new-perfil" required>
+          <option value="cliente">🧑‍🍳 Sou Cliente (Quero receitas e fazer pedidos)</option>
+          <option value="entregador">🛵 Sou Entregador (Quero fazer entregas e trabalhar)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary">Criar Minha Conta</button>
       
-      <button type="submit" class="btn-primary mt-4">Criar conta</button>
+      <p style="color: var(--text-muted); text-align: center; margin-top: 24px; font-size: 0.9rem;">
+        Já possui uma conta? <a href="login.html" style="color: var(--primary-food); text-decoration: none; font-weight: 600;">Acessar Plataforma</a>
+      </p>
     </form>
-    
-    <div style="margin-top: 24px; font-size: 0.875rem;">
-      <span style="color: var(--text-muted);">Já tem uma conta? </span>
-      <a href="login.html" style="color: var(--primary); text-decoration: none; font-weight: bold;">Faça login aqui</a>
-    </div>
   </div>
-</div>
-
-<script src="cadastro.js"></script>
+  <script src="cadastro.js"></script>
 </body>
 </html>

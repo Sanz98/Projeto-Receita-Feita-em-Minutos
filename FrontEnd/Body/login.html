@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,8 +16,8 @@
     .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
     .input-group { margin-bottom: 20px; text-align: left; }
     .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
-    .input-group input, .input-group select { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-light); padding: 14px 16px; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border 0.3s; }
-    .input-group input:focus, .input-group select:focus { border-color: var(--primary-food); }
+    .input-group input { width: 100%; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-light); padding: 14px 16px; border-radius: 10px; font-size: 0.95rem; outline: none; transition: border 0.3s; }
+    .input-group input:focus { border-color: var(--primary-food); }
     .btn-primary { background: var(--primary-food); color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.3s; }
     .btn-primary:hover { background: var(--primary-hover); }
     #msg-erro { background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 20px; display: none; border: 1px solid rgba(239, 68, 68, 0.2); }
@@ -31,7 +31,7 @@
     </div>
     
     <h2>Bem-vindo de volta!</h2>
-    <p class="subtitle">Faça login para acessar suas receitas e pedidos.</p>
+    <p class="subtitle">Faça login para acessar a plataforma.</p>
 
     <div id="msg-erro">Usuário ou senha incorretos!</div>
 
@@ -46,22 +46,14 @@
         <input type="password" id="password" placeholder="Digite sua senha" required />
       </div>
 
-      <div class="input-group">
-        <label for="perfil">Perfil de Acesso</label>
-        <select id="perfil" required>
-          <option value="cliente">🧑‍🍳 Cliente (Receitas & Pedidos)</option>
-          <option value="entregador">🛵 Entregador (Shopper Delivery)</option>
-        </select>
-      </div>
-
       <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
         <a href="esqueciSenha.html" style="color: var(--primary-food); font-size: 0.85rem; text-decoration: none; font-weight: 600; transition: color 0.3s;">Esqueceu a senha?</a>
       </div>
 
-      <button type="submit" class="btn-primary">Entrar no Sistema</button>
+      <button type="submit" class="btn-primary">Acessar Plataforma</button>
       
       <p style="color: var(--text-muted); text-align: center; margin-top: 24px; font-size: 0.9rem;">
-        Não tem uma conta? <a href="cadastro.html" style="color: var(--primary-food); text-decoration: none; font-weight: 600;">Registe-se</a>
+        Ainda não possui uma conta? <a href="cadastro.html" style="color: var(--primary-food); text-decoration: none; font-weight: 600;">Criar minha conta</a>
       </p>
     </form>
   </div>
@@ -79,13 +71,12 @@
       
       const btn = document.querySelector('.btn-primary');
       const textoOriginal = btn.innerText;
-      btn.innerText = "A autenticar...";
+      btn.innerText = "Autenticando...";
       btn.style.opacity = "0.7";
       btn.disabled = true;
 
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
-      const perfil = document.getElementById("perfil").value;
       const msgErro = document.getElementById("msg-erro");
 
       msgErro.style.display = "none";
@@ -102,10 +93,10 @@
         if (res.ok) {
           localStorage.setItem('logado', 'true');
           localStorage.setItem('token', dados.token);
-          localStorage.setItem('perfil', perfil);
+          
+          localStorage.setItem('perfil', dados.perfil);
 
-          // Roteamento Mágico para Cliente ou Entregador
-          if (perfil === 'entregador') {
+          if (dados.perfil === 'entregador') {
             window.location.href = 'entregador.html';
           } else {
             window.location.href = 'index.html';

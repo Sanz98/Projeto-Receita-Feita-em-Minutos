@@ -69,13 +69,11 @@ function showToast(message, type = 'success') {
   toast.innerHTML = `${icon} <span style="line-height: 1.4;">${message}</span>`;
   container.appendChild(toast);
   
-  // Animação de entrada suave
   requestAnimationFrame(() => {
     toast.style.transform = 'translateX(0)';
     toast.style.opacity = '1';
   });
   
-  // Remove após 3.5 segundos
   setTimeout(() => {
     toast.style.transform = 'translateX(120%)';
     toast.style.opacity = '0';
@@ -166,7 +164,7 @@ async function carregar() {
     }
 
     if (!res.ok) {
-      console.warn("Aviso: O servidor devolveu um erro ao tentar carregar as receitas.");
+      console.warn("Aviso: O servidor retornou um erro ao tentar carregar as receitas.");
       return;
     }
 
@@ -280,7 +278,7 @@ async function criarReceita() {
     }
   } catch (error) {
     console.error("Erro no fluxo de execução de IA:", error);
-    showToast(error.message || "Falha de comunicação com o motor de Inteligência Artificial.", "error");
+    showToast(error.message || "Falha de conexão com a Inteligência Artificial.", "error");
   } finally {
     btnExtrair.innerText = textoOriginal;
     btnExtrair.style.opacity = "1";
@@ -362,8 +360,8 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
       showToast("Erro ao atualizar a receita no servidor.", "error");
     }
   } catch (error) {
-    console.error("Erro crítica na requisição PUT:", error);
-    showToast("Erro crítica na requisição ao servidor.", "error");
+    console.error("Erro na requisição PUT:", error);
+    showToast("Erro de conexão com o servidor.", "error");
   }
 }
 
@@ -532,7 +530,7 @@ function atualizarListaCompras() {
 // RASTREAMENTO DINÂMICO LIGADO AO BACKEND MONGODB
 // ==========================================
 async function fecharPedidoShopper(valorTotal) {
-  if (itensParaComprarGlobal.length === 0) return showToast("O seu carrinho de compras está vazio!", "error");
+  if (itensParaComprarGlobal.length === 0) return showToast("Seu carrinho de compras está vazio!", "error");
 
   try {
     const res = await fetch(`${baseUrl}/pedidos`, {
@@ -550,13 +548,13 @@ async function fecharPedidoShopper(valorTotal) {
 
     if (res.ok) {
       itensParaComprarGlobal = []; 
-      showToast("Pedido confirmado! A enviar para a central de estafetas...", "success");
+      showToast("Pedido confirmado! Enviando para a central de motoristas...", "success");
       navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
       showToast("Erro ao criar pedido no servidor.", "error");
     }
   } catch(e) {
-    showToast("Falha de ligação à central de entregas.", "error");
+    showToast("Falha de conexão com a central de entregas.", "error");
   }
 }
 
@@ -589,12 +587,12 @@ async function carregarPedidosShopper() {
     }
 
     container.innerHTML = pedidos.map(p => {
-      let statusText = "A procurar entregador disponível...";
+      let statusText = "Buscando motorista disponível...";
       let corStatus = "#FFB800";
       let tempoText = "Calculando...";
 
       if (p.status === 'em_rota') {
-        statusText = "Entregador a caminho!";
+        statusText = "Motorista a caminho!";
         corStatus = "#10b981";
         tempoText = `Chega em breve`;
       } else if (p.status === 'entregue') {
@@ -631,7 +629,6 @@ async function carregarPedidosShopper() {
     console.error("Erro ao sincronizar pedidos:", e);
   }
 
-  // A Mágica do Polling (Ouve o MongoDB a cada 3 segundos)
   clearTimeout(timeoutPollingCliente);
   timeoutPollingCliente = setTimeout(carregarPedidosShopper, 3000);
 }
@@ -665,7 +662,7 @@ async function carregarHistorico() {
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
               <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
-                <span style="color: #a3a3a3;">Sincronizado via Web Scraping</span>
+                <span style="color: #a3a3a3;">Sincronizado via Extração</span>
                 <span style="color: #10b981;">Ativo</span>
               </div>
             </div>
@@ -740,7 +737,7 @@ async function enviarAvaliacao() {
     }
   } catch (error) {
     console.error("Erro na avaliação:", error);
-    showToast("Falha na conexão com o Back-end.", "error");
+    showToast("Falha na conexão com o servidor.", "error");
   }
 }
 
@@ -763,8 +760,8 @@ async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
 
-  if (!senhaAtual || !novaSenha) return showToast("Preencha a palavra-passe atual e a nova!", "error");
-  if (novaSenha.length < 6) return showToast("A nova palavra-passe deve ter pelo menos 6 caracteres.", "error");
+  if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
+  if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
 
   try {
     const res = await fetch(`${baseUrl}/perfil/senha`, {
@@ -786,12 +783,12 @@ async function alterarSenha() {
       showToast(dados.mensagem, "error");
     }
   } catch (error) {
-    showToast("Erro de ligação com o servidor ao alterar a palavra-passe.", "error");
+    showToast("Erro de conexão com o servidor ao alterar a senha.", "error");
   }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem a certeza absoluta de que deseja excluir a sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
@@ -809,7 +806,7 @@ async function excluirConta() {
       showToast(dados.mensagem || "Erro ao excluir conta.", "error");
     }
   } catch (error) {
-    showToast("Erro de ligação com o servidor.", "error");
+    showToast("Erro de conexão com o servidor.", "error");
   }
 }
 
