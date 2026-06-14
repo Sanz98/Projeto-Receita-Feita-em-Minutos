@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Conectado ao MongoDB Atlas com sucesso!'))
   .catch((err) => console.error('❌ Erro ao conectar ao MongoDB:', err));
 
-// Inicializando o GROQ (Substituto ultra-rápido do Gemini)
+// Inicializando o GROQ
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 app.use(cors());
@@ -40,25 +40,25 @@ app.use('/receitas', rotasReceitas);
 app.use('/users', rotasUsuarios);
 
 // ==========================================
-// ROTA DE EXTRAÇÃO AVANÇADA (CACHE -> SCRAPER -> YOUTUBE -> GROQ IA)
+// ROTA DE EXTRAÇÃO AVANÇADA (COM LEITURA PROFUNDA DE HTML)
 // ==========================================
 app.post('/receitas/extrair-ia', async (req, res) => {
   try {
     const { link } = req.body;
     if (!link) return res.status(400).json({ mensagem: "Por favor, forneça um link válido." });
 
-    // 1. CAMADA DE CACHE: Verificar se já existe na base de dados
+    // 1. CAMADA DE CACHE
     const receitaExistente = await Receita.findOne({ link: link });
     if (receitaExistente) {
       return res.status(200).json({ 
         nome: receitaExistente.nome, 
         ingredientes: receitaExistente.ingredientes,
-        imagem: receitaExistente.imagem || "", // Puxa imagem do cache
+        imagem: receitaExistente.imagem || "",
         origem: "cache" 
       });
     }
 
-    // 2. CAMADA DE SCRAPER: Tentar extração automática de sites (Zero Custo)
+    // 2. CAMADA DE SCRAPER
     try {
       const { default: scraper } = await import('recipe-scrapers');
       const data = await scraper(link);
@@ -66,67 +66,91 @@ app.post('/receitas/extrair-ia', async (req, res) => {
       return res.status(200).json({ 
         nome: data.title, 
         ingredientes: data.ingredients.join(', '),
-        imagem: data.image || "", // Puxa a imagem original do site
+        imagem: data.image || "", 
         origem: "scraper" 
       });
     } catch (scraperErr) {
-      console.log("Scraper não suporta este site, a tentar extração por vídeo ou IA...");
+      console.log("Scraper direto falhou. A iniciar leitura profunda do site...");
     }
 
-    // 3. CAMADA DE LEITURA DO YOUTUBE (Extração de Legendas Gratuita)
+    // 3. CAMADA DE LEITURA (YOUTUBE OU HTML)
     let contextoAdicional = "";
+    let imagemCapturada = "";
+
     if (link.includes("youtube.com") || link.includes("youtu.be")) {
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(link);
-        // Junta os textos da legenda e limita a 3000 caracteres para ser rápido
         contextoAdicional = transcript.map(t => t.text).join(' ').substring(0, 3000); 
-        console.log("Legenda do YouTube extraída com sucesso!");
       } catch (err) {
-        console.log("Vídeo sem legenda disponível. A IA tentará deduzir.");
+        console.log("Vídeo sem legenda disponível.");
+      }
+      
+      const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
+      const match = link.match(regex);
+      if (match && match[1].length === 11) {
+        imagemCapturada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+      }
+    } else {
+      // NOVIDADE: Ler o site para garantir Título e Imagem oficiais!
+      try {
+        const response = await fetch(link);
+        const html = await response.text();
+        
+        // Roubar o Título da Página
+        const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        const pageTitle = titleMatch ? titleMatch[1].trim() : "";
+        
+        // Roubar a Descrição
+        const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) 
+                       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+        const pageDesc = descMatch ? descMatch[1].trim() : "";
+        
+        // Roubar a Fotografia Oficial do Site (OG:Image)
+        const imgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+        if (imgMatch && imgMatch[1]) {
+            imagemCapturada = imgMatch[1];
+        }
+        
+        contextoAdicional = `Título Oficial da Página: ${pageTitle}. Descrição: ${pageDesc}`;
+      } catch(err) {
+        console.log("Falha ao capturar o HTML da página externa.");
       }
     }
 
-    // 4. CAMADA DE IA (Groq Cloud) - PROMPT FORTALECIDO
+    // 4. CAMADA DE IA (Groq)
     const prompt = `Você é um assistente culinário. Analise o seguinte contexto e extraia a receita.
     Link: ${link}
-    Legenda extraída (se houver): ${contextoAdicional}
+    Contexto extraído da página: ${contextoAdicional}
     
     REGRAS ABSOLUTAS:
     1. Formate os ingredientes numa única linha, separados por vírgula.
-    2. Responda EXCLUSIVAMENTE com um objeto JSON válido. Nenhuma palavra a mais antes ou depois.
-    3. Se não houver contexto suficiente para deduzir os ingredientes, devolva este JSON: {"nome": "Receita não identificada", "ingredientes": "Não foi possível extrair a receita deste link. Verifique se o vídeo possui instruções claras."}
+    2. Responda EXCLUSIVAMENTE com um objeto JSON válido.
+    3. Use o "Título Oficial da Página" fornecido no contexto para ser o "nome" da receita.
+    4. Se não houver contexto nem título, devolva: {"nome": "Receita não identificada", "ingredientes": "Falha na leitura do link."}
     
     Responda apenas com o JSON:`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.1-8b-instant", 
-      temperature: 0.1, // Temperatura baixa para respostas robóticas/estritas
+      temperature: 0.1, 
     });
 
     let textoResposta = chatCompletion.choices[0]?.message?.content || "";
     textoResposta = textoResposta.replace(/```json|```/g, '').trim();
     
-    // PROTEÇÃO ANTI-CRASH E GERAÇÃO DE IMAGEM YOUTUBE
     let dadosFormatados;
     try {
       dadosFormatados = JSON.parse(textoResposta);
-      
-      // Se a IA gerou o JSON e for link do YouTube, criamos a thumbnail manualmente
-      let imagemGerada = "";
-      const regex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
-      const match = link.match(regex);
-      if (match && match[1].length === 11) {
-        imagemGerada = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
-      }
-      dadosFormatados.imagem = imagemGerada; // Injeta a imagem no retorno
-
+      // Força o envio da Imagem Real que extraímos no Passo 3
+      dadosFormatados.imagem = imagemCapturada || ""; 
     } catch (parseError) {
-      console.log("A IA falhou em gerar JSON. Resposta enviada:", textoResposta);
+      console.log("A IA falhou. Resposta enviada:", textoResposta);
       dadosFormatados = {
         nome: "Receita Desconhecida",
-        ingredientes: "Não conseguimos extrair as informações. O link não contém texto legível ou legenda pública.",
-        imagem: ""
+        ingredientes: "Não conseguimos extrair as informações.",
+        imagem: imagemCapturada || ""
       };
     }
     
@@ -134,9 +158,8 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 
   } catch (error) {
     console.error("Erro crítico na integração:", error);
-
     if (error.status === 429) {
-      res.status(429).json({ mensagem: "Muitos pedidos realizados num curto espaço de tempo. Aguarde um instante." });
+      res.status(429).json({ mensagem: "Muitos pedidos num curto espaço de tempo." });
     } else {
       res.status(500).json({ mensagem: "Erro interno no servidor ao processar a receita." });
     }
@@ -230,5 +253,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor a correr em http://localhost:${PORT}`);
-  console.log("✅ Sistema atualizado com imagens reais e motor Groq (Llama 3.1)!");
+  console.log("✅ Sistema de leitura profunda de HTML e Imagens ativado!");
 });
