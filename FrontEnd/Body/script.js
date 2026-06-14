@@ -164,7 +164,7 @@ async function carregar() {
     }
 
     if (!res.ok) {
-      console.warn("Aviso: O servidor retornou um erro ao tentar carregar as receitas.");
+      console.warn("Aviso: O servidor devolveu um erro ao tentar carregar as receitas.");
       return;
     }
 
@@ -360,8 +360,8 @@ async function salvarEdicaoReceita(id, imagemOriginal) {
       showToast("Erro ao atualizar a receita no servidor.", "error");
     }
   } catch (error) {
-    console.error("Erro na requisição PUT:", error);
-    showToast("Erro de conexão com o servidor.", "error");
+    console.error("Erro crítica na requisição PUT:", error);
+    showToast("Erro crítica na requisição ao servidor.", "error");
   }
 }
 
@@ -484,7 +484,7 @@ function capturarItensParaFaltantes() {
 }
 
 // ==========================================
-// ABA DE LISTA DE COMPRAS
+// ABA DE LISTA DE COMPRAS E MÁGICA GPS
 // ==========================================
 function atualizarListaCompras() {
   const container = document.getElementById("lista-compras-itens");
@@ -526,35 +526,63 @@ function atualizarListaCompras() {
   }
 }
 
-// ==========================================
-// RASTREAMENTO DINÂMICO LIGADO AO BACKEND MONGODB
-// ==========================================
+// O Cliente solicita o pedido capturando GPS
 async function fecharPedidoShopper(valorTotal) {
-  if (itensParaComprarGlobal.length === 0) return showToast("Seu carrinho de compras está vazio!", "error");
+  if (itensParaComprarGlobal.length === 0) return showToast("O seu carrinho de compras está vazio!", "error");
 
-  try {
-    const res = await fetch(`${baseUrl}/pedidos`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${obterToken()}`
-      },
-      body: JSON.stringify({
-        itens: itensParaComprarGlobal.join(', '),
-        itensContagem: itensParaComprarGlobal.length,
-        valorTotal: valorTotal.toFixed(2)
-      })
-    });
+  const processarPedido = async (enderecoFinal) => {
+    try {
+      const res = await fetch(`${baseUrl}/pedidos`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${obterToken()}`
+        },
+        body: JSON.stringify({
+          itens: itensParaComprarGlobal.join(', '),
+          itensContagem: itensParaComprarGlobal.length,
+          valorTotal: valorTotal.toFixed(2),
+          endereco: enderecoFinal // Endereço 100% Real
+        })
+      });
 
-    if (res.ok) {
-      itensParaComprarGlobal = []; 
-      showToast("Pedido confirmado! Enviando para a central de motoristas...", "success");
-      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
-    } else {
-      showToast("Erro ao criar pedido no servidor.", "error");
+      if (res.ok) {
+        itensParaComprarGlobal = []; 
+        showToast("Pedido confirmado! Enviando para a central de motoristas...", "success");
+        navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+      } else {
+        showToast("Erro ao criar pedido no servidor.", "error");
+      }
+    } catch(e) {
+      showToast("Falha de conexão à central de entregas.", "error");
     }
-  } catch(e) {
-    showToast("Falha de conexão com a central de entregas.", "error");
+  };
+
+  // CAPTURA DE GPS REAL
+  if (navigator.geolocation) {
+    showToast("Permita o uso do GPS para calcularmos a entrega exata...", "success");
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      let enderecoGPS = `Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+      try {
+        // Usa OpenStreetMap (Nominatim) para converter Latitude/Longitude no Nome da Rua real!
+        const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const geoData = await geoRes.json();
+        if (geoData && geoData.display_name) {
+          enderecoGPS = geoData.display_name; 
+        }
+      } catch(e) {
+        console.warn("Falha ao traduzir GPS para nome de rua. Usando coordenadas.");
+      }
+      
+      processarPedido(enderecoGPS);
+    }, (error) => {
+      processarPedido("Localização GPS não fornecida pelo cliente");
+    }, { timeout: 10000 });
+  } else {
+    processarPedido("Geolocalização não suportada neste dispositivo");
   }
 }
 
@@ -601,6 +629,9 @@ async function carregarPedidosShopper() {
         tempoText = "Concluído";
       }
 
+      // NOVIDADE: Mapa centralizado usando o endereço do cliente!
+      const mapaReal = `https://maps.google.com/maps?q=${encodeURIComponent(p.endereco || 'Sumaré, SP')}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
       return `
         <div class="historico-card" style="padding: 16px; margin-bottom: 20px; border-left: 4px solid ${corStatus}; display: block;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -616,7 +647,7 @@ async function carregarPedidosShopper() {
           
           ${p.status !== 'entregue' ? `
           <div style="margin-top: 15px; width: 100%; height: 200px; border-radius: 12px; overflow: hidden; border: 1px solid #323238; position: relative;">
-            <iframe src="https://maps.google.com/maps?q=Sumaré,SP&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
+            <iframe src="${mapaReal}" width="100%" height="100%" style="border:0; filter: invert(90%) hue-rotate(180deg);" allowfullscreen="" loading="lazy"></iframe>
             <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(28, 28, 30, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #323238; color: #f5f5f5;">
               📍 Rastreamento GPS Satélite Ativo
             </div>
@@ -634,27 +665,19 @@ async function carregarPedidosShopper() {
 }
 
 // ==========================================
-// HISTÓRICO DE RECEITAS
+// HISTÓRICO E AVALIAÇÕES (MANTIDOS)
 // ==========================================
 async function carregarHistorico() {
   try {
-    const res = await fetch(API, {
-      method: "GET",
-      headers: { "Authorization": `Bearer ${obterToken()}` }
-    });
-    
+    const res = await fetch(API, { headers: { "Authorization": `Bearer ${obterToken()}` }});
     if (!res.ok) return;
-
     const data = await res.json();
     receitasGlobais = Array.isArray(data) ? data : [];
-
     const lista = document.getElementById("lista-historico");
     if (!lista) return;
     lista.innerHTML = "";
-
     receitasGlobais.forEach((r, index) => {
       const img = r.imagem || gerarImagemReceita(r.nome, r.link);
-
       lista.innerHTML += `
         <div class="historico-card" style="margin-bottom: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -662,8 +685,7 @@ async function carregarHistorico() {
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <h3 style="font-size: 1.125rem; font-weight: 700; color: #f5f5f5;">${r.nome}</h3>
               <div style="display: flex; gap: 12px; font-size: 0.875rem; font-weight: 500;">
-                <span style="color: #a3a3a3;">Sincronizado via Extração</span>
-                <span style="color: #10b981;">Ativo</span>
+                <span style="color: #a3a3a3;">Sincronizado via Extração</span><span style="color: #10b981;">Ativo</span>
               </div>
             </div>
           </div>
@@ -673,72 +695,29 @@ async function carregarHistorico() {
         </div>
       `;
     });
-  } catch (error) {
-    console.error("Erro ao carregar histórico:", error);
-  }
+  } catch (error) {}
 }
 
-// ==========================================
-// SISTEMA DE AVALIAÇÃO (ESTRELAS)
-// ==========================================
 let notaSelecionada = 0;
-
 function hoverEstrela(valor) {
-  const stars = document.querySelectorAll(".star");
-  stars.forEach(star => {
-    if (star.getAttribute("data-value") <= valor) {
-      star.style.color = "#FFB800"; 
-    } else {
-      star.style.color = "#323238"; 
-    }
-  });
+  document.querySelectorAll(".star").forEach(star => { star.style.color = star.getAttribute("data-value") <= valor ? "#FFB800" : "#323238"; });
 }
-
-function resetEstrelas() {
-  hoverEstrela(notaSelecionada); 
-}
-
-function selecionarNota(valor) {
-  notaSelecionada = valor;
-  hoverEstrela(valor);
-}
+function resetEstrelas() { hoverEstrela(notaSelecionada); }
+function selecionarNota(valor) { notaSelecionada = valor; hoverEstrela(valor); }
 
 async function enviarAvaliacao() {
-  if (notaSelecionada === 0) {
-    return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
-  }
-
+  if (notaSelecionada === 0) return showToast("Por favor, selecione pelo menos uma estrela para nos avaliar!", "error");
   const comentario = document.getElementById("comentario-avaliacao").value.trim();
-
   try {
-    const res = await fetch(`${baseUrl}/avaliacoes`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${obterToken()}` 
-      },
-      body: JSON.stringify({ nota: notaSelecionada, comentario: comentario })
-    });
-
+    const res = await fetch(`${baseUrl}/avaliacoes`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ nota: notaSelecionada, comentario: comentario }) });
     if (res.ok) {
-      notaSelecionada = 0;
-      resetEstrelas();
-      document.getElementById("comentario-avaliacao").value = "";
-      
-      showToast("Avaliação enviada com sucesso!", "success");
-      navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
+      notaSelecionada = 0; resetEstrelas(); document.getElementById("comentario-avaliacao").value = "";
+      showToast("Avaliação enviada com sucesso!", "success"); navegar('confirmacao', document.querySelectorAll('.menu button')[7]);
     } else {
-      if (res.status === 401 || res.status === 403) {
-         showToast("Sessão expirada! Por favor, faça login novamente para avaliar.", "error");
-         sair();
-      } else {
-         showToast("Erro ao enviar avaliação no servidor.", "error");
-      }
+      if (res.status === 401 || res.status === 403) { showToast("Sessão expirada! Por favor, faça login novamente.", "error"); sair(); } 
+      else { showToast("Erro ao enviar avaliação no servidor.", "error"); }
     }
-  } catch (error) {
-    console.error("Erro na avaliação:", error);
-    showToast("Falha na conexão com o servidor.", "error");
-  }
+  } catch (error) { showToast("Falha na conexão com o servidor.", "error"); }
 }
 
 // ==========================================
@@ -747,68 +726,37 @@ async function enviarAvaliacao() {
 function carregarPerfil() {
   const token = obterToken();
   if (token !== "jwt-fake") {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      document.getElementById('perfil-username').innerText = payload.username || "Usuário";
-    } catch(e) {
-      console.error("Erro ao decodificar perfil:", e);
-    }
+    try { document.getElementById('perfil-username').innerText = JSON.parse(atob(token.split('.')[1])).username || "Usuário"; } 
+    catch(e) {}
   }
 }
 
 async function alterarSenha() {
   const senhaAtual = document.getElementById("senha-atual").value.trim();
   const novaSenha = document.getElementById("nova-senha").value.trim();
-
   if (!senhaAtual || !novaSenha) return showToast("Preencha a senha atual e a nova!", "error");
   if (novaSenha.length < 6) return showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
 
   try {
-    const res = await fetch(`${baseUrl}/perfil/senha`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${obterToken()}`
-      },
-      body: JSON.stringify({ senhaAtual, novaSenha })
-    });
-
+    const res = await fetch(`${baseUrl}/perfil/senha`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${obterToken()}` }, body: JSON.stringify({ senhaAtual, novaSenha }) });
     const dados = await res.json();
-
     if (res.ok) {
       showToast(dados.mensagem, "success");
-      document.getElementById("senha-atual").value = "";
-      document.getElementById("nova-senha").value = "";
-    } else {
-      showToast(dados.mensagem, "error");
-    }
-  } catch (error) {
-    showToast("Erro de conexão com o servidor ao alterar a senha.", "error");
-  }
+      document.getElementById("senha-atual").value = ""; document.getElementById("nova-senha").value = "";
+    } else { showToast(dados.mensagem, "error"); }
+  } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
 }
 
 async function excluirConta() {
-  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir sua conta? TODOS os seus dados e receitas serão perdidos para sempre!");
+  const confirmacao = confirm("CUIDADO: Tem certeza absoluta que deseja excluir a sua conta? TODOS os seus dados serão perdidos para sempre!");
   if (!confirmacao) return;
 
   try {
-    const res = await fetch(`${baseUrl}/perfil`, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${obterToken()}` }
-    });
-
-    const dados = await res.json();
-    
+    const res = await fetch(`${baseUrl}/perfil`, { method: "DELETE", headers: { "Authorization": `Bearer ${obterToken()}` } });
     if (res.ok) {
-      showToast(dados.mensagem, "success");
-      setTimeout(() => sair(), 1500); 
-    } else {
-      showToast(dados.mensagem || "Erro ao excluir conta.", "error");
-    }
-  } catch (error) {
-    showToast("Erro de conexão com o servidor.", "error");
-  }
+      showToast("Conta excluída com sucesso", "success"); setTimeout(() => sair(), 1500); 
+    } else { showToast("Erro ao excluir conta.", "error"); }
+  } catch (error) { showToast("Erro de conexão com o servidor.", "error"); }
 }
 
-// Inicialização automática
 carregar();

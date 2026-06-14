@@ -175,13 +175,25 @@ app.post('/receitas/extrair-ia', async (req, res) => {
 });
 
 // ==========================================
-// SISTEMA REAL DE DELIVERY (SHOPPER)
+// SISTEMA REAL DE DELIVERY COM GPS
 // ==========================================
 app.post('/pedidos', async (req, res) => {
   try {
     const user = jwt.verify(req.headers["authorization"].split(" ")[1], SECRET);
-    const { itens, itensContagem, valorTotal } = req.body;
-    await new Pedido({ clienteId: user.id, clienteNome: user.username, itens, itensContagem, valorTotal, endereco: "Av. Rebouças, Centro, Sumaré" }).save();
+    
+    // Apanha o endereço real enviado pelo GPS do cliente (ou fallback caso tenha sido negado)
+    const { itens, itensContagem, valorTotal, endereco } = req.body;
+    const enderecoFinal = endereco || "Localização GPS não fornecida pelo cliente";
+
+    await new Pedido({ 
+      clienteId: user.id, 
+      clienteNome: user.username, 
+      itens, 
+      itensContagem, 
+      valorTotal, 
+      endereco: enderecoFinal 
+    }).save();
+
     res.status(201).json({ mensagem: "Pedido enviado!" });
   } catch (err) { res.status(500).json({ mensagem: "Erro ao criar pedido." }); }
 });
@@ -278,5 +290,5 @@ app.post('/users/redefinir-senha', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log("✅ Sistema Back-end com Trava de Perfis Ativo!");
+  console.log("✅ Sistema Back-end com Geolocalização de GPS e Perfis Ativos!");
 });
