@@ -663,27 +663,36 @@ async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
   let enderecoFinal = "";
   const radioSelecionado = document.querySelector('input[name="endereco-selecionado"]:checked');
 
-  if (radioSelecionado) {
-    enderecoFinal = radioSelecionado.value;
-  } else {
-    // Pegando valores
-    const cep = document.getElementById("input-cep").value.trim();
-    const num = document.getElementById("input-numero").value.trim();
-    const rua = document.getElementById("input-rua").value.trim();
-    const bairro = document.getElementById("input-bairro").value.trim();
-    const cidade = document.getElementById("input-cidade").value.trim();
-    const comp = document.getElementById("input-complemento").value.trim();
+  // --- LÓGICA DE SEGURANÇA (Prevenção do erro de "null") ---
+  const elCep = document.getElementById("input-cep");
+  const elNum = document.getElementById("input-numero");
+  
+  // Se o usuário selecionou um endereço salvo, ele não precisa dos inputs.
+  // Se ele NÃO selecionou, então precisamos validar se os inputs existem no DOM.
+  if (!radioSelecionado) {
+    if (!elCep || !elNum) {
+      console.error("Erro: Os campos de endereço não foram encontrados no DOM.");
+      return showToast("Erro: Formulário não carregado corretamente.", "error");
+    }
 
-    // VALIDAÇÃO: Apenas CEP e Número são obrigatórios
+    const cep = elCep.value.trim();
+    const num = elNum.value.trim();
+    const rua = document.getElementById("input-rua")?.value.trim() || "";
+    const bairro = document.getElementById("input-bairro")?.value.trim() || "";
+    const cidade = document.getElementById("input-cidade")?.value.trim() || "";
+    const comp = document.getElementById("input-complemento")?.value.trim() || "";
+
+    // VALIDAÇÃO INTELIGENTE: Só obriga CEP e Número
     if (!cep || !num) {
       return showToast("Por favor, preencha o CEP e o Número!", "error");
     }
 
-    // Montagem dinâmica do endereço
+    // MONTAGEM DINÂMICA: Constrói o texto apenas com o que foi preenchido
     enderecoFinal = `${rua}, ${num}${comp ? ' - ' + comp : ''}${bairro ? ' - ' + bairro : ''}${cidade ? ' - ' + cidade : ''} (CEP: ${cep})`;
 
     // Salvar novo endereço se marcado
-    if (document.getElementById("check-salvar-endereco").checked) {
+    const checkSalvar = document.getElementById("check-salvar-endereco");
+    if (checkSalvar && checkSalvar.checked) {
       try {
         await fetch(`${baseUrl}/perfil/endereco`, {
           method: "PUT",
@@ -692,8 +701,12 @@ async function processarFormularioEndereco(modo, pedidoId, valorTotal) {
         });
       } catch(e) { console.warn("Erro ao salvar endereço no perfil."); }
     }
+  } else {
+    // Caso tenha selecionado o rádio button
+    enderecoFinal = radioSelecionado.value;
   }
 
+  // Finalização do fluxo
   if (modo === 'pedido') {
     despacharPedidoNovo(enderecoFinal, valorTotal);
   } else if (modo === 'redefinir') {
